@@ -35,7 +35,6 @@ string[] opcodeExtensions = [
 
 string[] instructions; // combination of all opcodes and extensions
 
-
 string[] registerNames = [
     "r0", "r1", "r2", "r3",
     "r4", "r5", "r6", "r7",
@@ -44,8 +43,13 @@ string[] registerNames = [
     "pc"
 ];
 
+string[] assemblerDirectives = [
+    "defb", "defw", "align", "include"
+];
+
 enum TOK : int {
     comma,
+    directive,
     instruction,
     label,
     newline,
@@ -69,6 +73,7 @@ struct Token {
     string toString() {
         switch (this.type) {
             case TOK.comma:
+                return "<Token: " ~ to!string(this.type) ~ ">";
             case TOK.newline:
                 return "<Token: " ~ to!string(this.type) ~ ">";
             default:
@@ -120,12 +125,17 @@ class Lexer {
         // Check if it is an instruction
         foreach(register; registerNames) {
             if (r.toLower() == register)
-                return Token(TOK.register, r);
+                return Token(TOK.register, r.toLower());
         }
 
         foreach(instruction; instructions) {
             if (r.toLower() == instruction)
-                return Token(TOK.instruction, r);
+                return Token(TOK.instruction, r.toLower());
+        }
+
+        foreach(directive; assemblerDirectives) {
+            if (r.toLower() == directive)
+                return Token(TOK.directive, r.toLower());
         }
 
         return Token(TOK.label, r);
