@@ -4,92 +4,11 @@ import std.conv;
 import std.stdio;
 import std.string;
 
-static this() {
-    foreach(o; opcodes) {
-        instructions ~= o;
-        foreach(e; opcodeExtensions) {
-            instructions ~= o~e;
-        }
-    }
-}
-
-string[] opcodes = [
-    "adc", "add", "adr", "and",
-    "b", "bic", "bl", "bx",
-    "cdp", "cmn", "cmp", "eor",
-    "ldc", "ldm", "ldr", "mcr",
-    "mla", "mov", "mrc", "mrs",
-    "msr", "mul", "mvn", "orr",
-    "rsb", "rsc", "sbc", "stc",
-    "stm", "str", "sub", "swi",
-    "swp", "teq", "tst",
-];
-
-string[] opcodeExtensions = [
-    "eq", "ne", "cs", "hs",
-    "cc ", "lo ", "mi ", "pl",
-    "vs ", "vc ", "hi ", "ls",
-    "ge ", "lt ", "gt ", "le",
-    "al"
-];
-
-string[] instructions; // combination of all opcodes and extensions
-
-string[] registerNames = [
-    "r0", "r1", "r2", "r3",
-    "r4", "r5", "r6", "r7",
-    "r8", "r9", "r10", "r11",
-    "r12", "r13", "r14", "r15",
-    "pc"
-];
-
-string[] assemblerDirectives = [
-    "defb", "defw", "align", "include"
-];
-
-enum TOK : int {
-    comma,
-    directive,
-    instruction,
-    label,
-    newline,
-    number,
-    register,
-    string_,
-}
-
-enum commentStart = ';';
-
-struct Loc {
-    string filename;
-    uint lineNumber = 1; // Instead of default 0
-    uint charNumber;
-}
-
-struct Token {
-    TOK type;
-    string value;
-    Loc location;
-
-    string toString() {
-        string locString = "[" ~ to!string(location.lineNumber) ~
-            ":" ~ to!string(location.charNumber) ~ "]";
-
-        string r = "<Token " ~ to!string(this.type) ~ " " ~ locString;
-
-        switch (this.type) {
-            case TOK.comma:
-            case TOK.newline:
-                return r ~ ">";
-            default:
-                return r ~ " " ~ this.value ~ ">";
-        }
-    }
-}
+import tokens;
 
 class Lexer {
     string input;
-    uint position;
+    uint offset;
 
     // Updated by next()
     Loc location;
@@ -109,16 +28,16 @@ class Lexer {
             location.charNumber++;
         }
 
-        position++;
+        offset++;
         return c;
     }
 
     char peek() {
-        if (position == input.length) {
+        if (offset == input.length) {
             return '\0';
         }
         else {
-            return input[position];
+            return input[offset];
         }
     }
 
@@ -139,17 +58,17 @@ class Lexer {
         } while(isAlphaNum(peek()) || peek() == '_');
 
         // Check if it is an instruction
-        foreach(register; registerNames) {
+        foreach(register; registerStrings) {
             if (r.toLower() == register)
                 return Token(TOK.register, r.toLower(), this.tokenStartLocation);
         }
 
-        foreach(instruction; instructions) {
+        foreach(instruction; opcodeStrings) {
             if (r.toLower() == instruction)
                 return Token(TOK.instruction, r.toLower(), this.tokenStartLocation);
         }
 
-        foreach(directive; assemblerDirectives) {
+        foreach(directive; assemblerDirectiveStrings) {
             if (r.toLower() == directive)
                 return Token(TOK.directive, r.toLower(), this.tokenStartLocation);
         }
@@ -174,11 +93,12 @@ class Lexer {
 
         while(true) {
             char c = peek();
+            this.tokenStartLocation = location;
+
             if (!c) {
+                tokens ~= Token(TOK.eof, to!string(c), tokenStartLocation);
                 break;
             }
-
-            this.tokenStartLocation = location;
 
             switch(c) {
                 // Single character tokens
