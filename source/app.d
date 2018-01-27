@@ -10,7 +10,7 @@ import parser;
 void main(string[] args)
 {
     // Temporary just set meadow.s as the default file
-    args ~= "testfiles/meadowbad.s";
+    args ~= "testfiles/meadowbadlex.s";
 
     auto parsedArgs = getopt(args);
 

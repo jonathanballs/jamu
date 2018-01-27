@@ -6,12 +6,14 @@
 	B main
 
 verses 	DEFW	4
-refrain DEFB	"Went to mow a meadow\n",0
+refrain DEFB	"Wen\t \" to mow a meadow\n",0
 wentmow	DEFB	"went to mow\n",0
 men	DEFB	" men ",0
 menc	DEFB	" men, ",0
 man	DEFB	" man ",0
-anddog	DEFB	" man and his dog, Spot\n",0
+anddog	DEFB	" man and his dog,
+
+Spot\n ",0
 
 	ALIGN
 
@@ -50,3 +52,5 @@ cd_nman	MOV R0, R2
 	BNE next
 
 	SWI 2
+        DEFB "this string overruns
+
