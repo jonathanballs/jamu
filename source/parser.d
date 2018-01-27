@@ -49,6 +49,7 @@ class Parser {
                 case TOK.label:
                 case TOK.number:
                 case TOK.register:
+                case TOK.string_:
                     Variant v = next();
                     arguments ~= v;
                     //ins.meta.tokens ~= t;
@@ -75,6 +76,19 @@ class Parser {
         }
 
         return arguments;
+    }
+
+    Directive parseDirective() {
+        assert(peek().type == TOK.directive);
+
+        auto dir = Directive();
+
+        Token t = next();
+        dir.directive = directiveToEnum(t.value);
+        dir.meta.tokens ~= t;
+        dir.arguments = parseArguments();
+
+        return dir;
     }
 
     Instruction parseInstruction() {
@@ -123,22 +137,8 @@ class Parser {
 
                     break;
                 case TOK.directive:
-                    if (t.value == "align") {
-                        programOffset += (4 - (programOffset % 4));
-                        break;
-                    } else if (t.value == "defw") {
-                        programOffset += 4;
-                        next();
-                        next();
-                        break;
-                    } else if (t.value == "defb") {
-                        while(next().type != TOK.newline){}
-                        break;
-                    }
-                    else {
-                        writeln("The include directive is not currently supported");
-                        exit(1);
-                    }
+                    Variant v = this.parseDirective();
+                    program ~= v;
                     break;
                 default:
                     writeln(tokens);

@@ -33,7 +33,7 @@ struct Directive {
     NodeMeta meta;
 
     string toString() {
-        string s = "<INS " ~ to!string(directive);
+        string s = "<DIR " ~ to!string(directive);
         foreach(arg; arguments) {
             s ~= " " ~ arg.toString();
         }

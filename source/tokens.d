@@ -113,3 +113,12 @@ Tuple!(OPCODES, "opcode", OPCODE_EXTS, "extension")
     assert(0);
 }
 
+DIRECTIVES directiveToEnum(string directive) {
+    foreach(d; [EnumMembers!DIRECTIVES]) {
+        if (to!string(d) == directive)
+            return d;
+    }
+
+    assert(0);
+}
+
