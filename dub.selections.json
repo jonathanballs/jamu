@@ -1,6 +1,7 @@
 {
 	"fileVersion": 1,
 	"versions": {
+		"colorize": "1.0.5",
 		"libdparse": "0.8.0-alpha.1"
 	}
 }

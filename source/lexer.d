@@ -5,6 +5,7 @@ import std.stdio;
 import std.string;
 
 import tokens;
+import exceptions;
 
 class Lexer {
     string input;
@@ -13,6 +14,9 @@ class Lexer {
     // Updated by next()
     Loc location;
     Loc tokenStartLocation;
+
+    // Errors
+    LexError[] errors;
 
     this(string filename, string input) {
         this.location.filename = filename;
@@ -46,7 +50,7 @@ class Lexer {
         string r = "";
         do {
             r ~= next();
-        } while('0' <= peek() && peek() <= '9');
+        } while(isDigit(peek()));
 
         return Token(TOK.number, r, this.tokenStartLocation);
     }
@@ -144,8 +148,16 @@ class Lexer {
                     break;
 
                 default:
-                    writeln("Error unexpected char " ~ next());
+                    // Log the error and then skip to the next line
+                    errors ~= new LexError(tokenStartLocation, 1,
+                            "Unexpected character '" ~ next() ~ "'");
+                    while (peek() != '\n' && peek() != '\0') { next(); }
+                    continue;
             }
+        }
+
+        if (errors) {
+            throw new LexException(errors);
         }
 
         return tokens;

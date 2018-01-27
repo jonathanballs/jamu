@@ -34,6 +34,49 @@ class Parser {
         this.tokens = tokens;
     }
 
+    Variant[] parseArguments() {
+
+        Variant[] arguments;
+        // Parse arguments list
+        wloop: while (true) {
+            auto t = peek();
+            switch (t.type) {
+                // New line only if no arguments
+                case TOK.newline:
+                     next();
+                     break wloop;
+
+                case TOK.label:
+                case TOK.number:
+                case TOK.register:
+                    Variant v = next();
+                    arguments ~= v;
+                    //ins.meta.tokens ~= t;
+
+                    // Next should be comma or newline
+                    if (peek().type == TOK.newline) {
+                        next();
+                        break wloop;
+                    } else if (peek().type == TOK.comma) {
+                        /*ins.meta.tokens ~= */next();
+                        break;
+                    } else {
+                        t = next();
+                        writeln("bad second token");
+                        goto default;
+                    }
+
+                default:
+                    writeln(tokens);
+                    writeln(arguments);
+                    writeln("Unexpected token at " ~ t.toString());
+                    assert(0);
+            }
+        }
+
+        return arguments;
+    }
+
     Instruction parseInstruction() {
         assert(peek().type == TOK.instruction);
 
@@ -46,41 +89,7 @@ class Parser {
         ins.extension = opc.extension;
         ins.meta.tokens ~= t;
 
-        // Parse arguments list
-        wloop: while (true) {
-            t = peek();
-            switch (t.type) {
-                // New line only if no arguments
-                case TOK.newline:
-                     next();
-                     break wloop;
-
-                case TOK.label:
-                case TOK.number:
-                case TOK.register:
-                    Variant v = next();
-                    ins.arguments ~= v;
-                    ins.meta.tokens ~= t;
-
-                    // Next should be comma or newline
-                    if (peek().type == TOK.newline) {
-                        next();
-                        break wloop;
-                    } else if (peek().type == TOK.comma) {
-                        ins.meta.tokens ~= next();
-                        break;
-                    } else {
-                        t = next();
-                        writeln("bad second token");
-                        goto default;
-                    }
-
-                default:
-                    writeln(ins);
-                    writeln("Unexpected token at " ~ t.toString());
-                    assert(0);
-            }
-        }
+        ins.arguments = parseArguments();
 
         return ins;
     }

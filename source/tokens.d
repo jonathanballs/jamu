@@ -66,6 +66,10 @@ struct Loc {
     string filename;
     uint lineNumber = 1; // Instead of default 0
     uint charNumber;
+
+    string toString() {
+        return filename ~ ":" ~ to!string(lineNumber) ~ ":" ~ to!string(charNumber);
+    }
 }
 
 struct Token {

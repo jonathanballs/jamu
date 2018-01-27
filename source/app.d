@@ -3,13 +3,14 @@ import std.file;
 import std.getopt;
 import std.variant;
 
+import exceptions;
 import lexer;
 import parser;
 
 void main(string[] args)
 {
     // Temporary just set meadow.s as the default file
-    args ~= "testfiles/meadow.s";
+    args ~= "testfiles/meadowbad.s";
 
     auto parsedArgs = getopt(args);
 
@@ -30,10 +31,19 @@ void main(string[] args)
 }
 
 void parseFile(string filename) {
-    auto file = File(filename);
-    auto tokens = new Lexer(filename, readText(filename)).lex();
-    auto program = new Parser(tokens).parse();
-    writeln(program);
+    auto fileText = readText(filename);
+    try {
+        auto tokens = new Lexer(filename, fileText).lex();
+        auto program = new Parser(tokens).parse();
+        foreach(p; program) {
+            writeln(p);
+        }
+    }
+    catch(LexException e) {
+        foreach(lexError; e.errors) {
+            lexError.printError(fileText);
+        }
+    }
 }
 
 void printHelp() {
