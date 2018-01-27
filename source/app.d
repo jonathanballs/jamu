@@ -30,7 +30,7 @@ void main(string[] args)
 
 void parseFile(string filename) {
     auto file = File(filename);
-    auto tokens = new Lexer(readText(filename)).lex();
+    auto tokens = new Lexer(filename, readText(filename)).lex();
     writeln(tokens);
 }
 

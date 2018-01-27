@@ -95,7 +95,8 @@ class Lexer {
     Loc location;
     Loc tokenStartLocation;
 
-    this(string input) {
+    this(string filename, string input) {
+        this.location.filename = filename;
         this.input = input;
     }
 
