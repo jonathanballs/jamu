@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+assembler.so
+assembler.dylib
+assembler.dll
+assembler.a
+assembler.lib
+assembler-test-*
+assembler
+*.exe
+*.o
+*.obj
+*.lst

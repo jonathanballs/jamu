@@ -1,0 +1,13 @@
+{
+	"name": "assembler",
+	"authors": [
+		"Jonathan Balls"
+	],
+	"description": "An assembler for ARM assembly.",
+        "dependencies": {
+            "libdparse": "~>0.8.0-alpha.1"
+        },
+	"copyright": "Copyright © 2018, Jonathan Balls",
+	"license": "MIT"
+}
+
