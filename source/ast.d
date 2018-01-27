@@ -17,13 +17,14 @@ struct Instruction {
     NodeMeta meta;
 
     string toString() {
-        string s = "<INS " ~ to!string(opcode);
-        if (extension != OPCODE_EXTS.al)
-            s ~= to!string(extension);
+        string s = ("<INSTRUCTION " ~ to!string(opcode) ~
+                to!string(extension) ~ ">");
+
         foreach(arg; arguments) {
-            s ~= " " ~ arg.toString();
+            s ~= "\n    " ~ arg.toString();
         }
-        return s ~ ">";
+
+        return s;
     }
 }
 
@@ -33,11 +34,13 @@ struct Directive {
     NodeMeta meta;
 
     string toString() {
-        string s = "<DIR " ~ to!string(directive);
+        string s = ("<DIRECTIVE " ~ to!string(directive) ~ ">");
+
         foreach(arg; arguments) {
-            s ~= " " ~ arg.toString();
+            s ~= "\n    " ~ arg.toString();
         }
-        return s ~ ">";
+
+        return s;
     }
 }
 

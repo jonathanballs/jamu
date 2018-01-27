@@ -1,6 +1,7 @@
 import std.conv;
 import std.traits;
 import std.stdio;
+import std.string;
 
 import std.typecons;
 
@@ -88,7 +89,7 @@ struct Token {
             case TOK.newline:
                 return s ~ ">";
             default:
-                return s ~ " " ~ this.value ~ ">";
+                return s ~ " " ~ chomp(this.value) ~ ">";
         }
     }
 }
