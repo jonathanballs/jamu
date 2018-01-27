@@ -62,7 +62,7 @@ enum commentStart = ';';
 
 struct Loc {
     string filename;
-    uint lineNumber;
+    uint lineNumber = 1; // Instead of default 0
     uint charNumber;
 }
 
@@ -72,13 +72,17 @@ struct Token {
     Loc location;
 
     string toString() {
+        string locString = "[" ~ to!string(location.lineNumber) ~
+            ":" ~ to!string(location.charNumber) ~ "]";
+
+        string r = "<Token " ~ to!string(this.type) ~ " " ~ locString;
+
         switch (this.type) {
             case TOK.comma:
-                return "<Token: " ~ to!string(this.type) ~ ">";
             case TOK.newline:
-                return "<Token: " ~ to!string(this.type) ~ ">";
+                return r ~ ">";
             default:
-                return "<Token: " ~ to!string(this.type) ~ " (" ~ this.value ~ ")>";
+                return r ~ " " ~ this.value ~ ">";
         }
     }
 }
@@ -87,13 +91,23 @@ class Lexer {
     string input;
     uint position;
 
+    // Updated by next()
+    Loc location;
+    Loc tokenStartLocation;
+
     this(string input) {
         this.input = input;
-
     }
 
     char next() {
         char c = peek();
+        if (c == '\n') {
+            location.lineNumber++;
+            location.charNumber = 0;
+        } else {
+            location.charNumber++;
+        }
+
         position++;
         return c;
     }
@@ -114,7 +128,7 @@ class Lexer {
             r ~= next();
         } while('0' <= peek() && peek() <= '9');
 
-        return Token(TOK.number, r);
+        return Token(TOK.number, r, this.tokenStartLocation);
     }
 
     Token lexIdentifier() {
@@ -126,23 +140,24 @@ class Lexer {
         // Check if it is an instruction
         foreach(register; registerNames) {
             if (r.toLower() == register)
-                return Token(TOK.register, r.toLower());
+                return Token(TOK.register, r.toLower(), this.tokenStartLocation);
         }
 
         foreach(instruction; instructions) {
             if (r.toLower() == instruction)
-                return Token(TOK.instruction, r.toLower());
+                return Token(TOK.instruction, r.toLower(), this.tokenStartLocation);
         }
 
         foreach(directive; assemblerDirectives) {
             if (r.toLower() == directive)
-                return Token(TOK.directive, r.toLower());
+                return Token(TOK.directive, r.toLower(), this.tokenStartLocation);
         }
 
-        return Token(TOK.label, r);
+        return Token(TOK.label, r, this.tokenStartLocation);
     }
 
     // TODO: handle escape sequences
+    // TODO: handle dangling strings properly
     Token lexString() {
         string r = "";
         do {
@@ -150,7 +165,7 @@ class Lexer {
         } while (peek() != '"');
         r ~= next();
 
-        return Token(TOK.string_, r);
+        return Token(TOK.string_, r, this.tokenStartLocation);
     }
 
     Token[] lex() {
@@ -162,14 +177,18 @@ class Lexer {
                 break;
             }
 
+            this.tokenStartLocation = location;
+
             switch(c) {
                 // Single character tokens
                 case ',':
-                    tokens ~= Token(TOK.comma, to!string(next()));
+                    tokens ~= Token(TOK.comma, to!string(next()),
+                            this.tokenStartLocation);
                     break;
                 // Newlines
                 case '\n':
-                    tokens ~= Token(TOK.newline, to!string(next()));
+                    tokens ~= Token(TOK.newline, to!string(next()),
+                            this.tokenStartLocation);
                     break;
                 case ' ': // Whitespace
                 case '\t':
