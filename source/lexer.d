@@ -36,12 +36,14 @@ class Lexer {
         return c;
     }
 
-    char peek() {
-        if (offset == input.length) {
+    char peek(int n = 1) {
+        n -= 1;
+
+        if (offset + n >= cast(uint)input.length) {
             return '\0';
         }
         else {
-            return input[offset];
+            return input[offset + n];
         }
     }
 
@@ -80,14 +82,56 @@ class Lexer {
         return Token(TOK.label, r, this.tokenStartLocation);
     }
 
-    // TODO: handle escape sequences
-    // TODO: handle dangling strings properly
     Token lexString() {
+        assert(next() == '"');
         string r = "";
-        do {
-            r ~= next();
-        } while (peek() != '"');
-        r ~= next();
+
+        bool isEscaping;
+
+        while (true) {
+            char c = next();
+
+            if (isEscaping) {
+                // Handle escape sequences
+                switch(c) {
+                    case 'n':
+                        r ~= '\n';
+                        break;
+                    case '"':
+                        r ~= '"';
+                        break;
+                    case '\\':
+                        r ~= '\\';
+                        break;
+                    default:
+                        auto errorLoc = location;
+                        errorLoc.charNumber -= 2;
+                        errors ~= new LexError(errorLoc, 2,
+                                "Unknown escape sequence '\\" ~ c ~ "'");
+                        while (peek() != '"' && peek() != '\0') { next(); }
+                        return Token(TOK.string_, r, this.tokenStartLocation);
+                }
+                isEscaping = false;
+            } else {
+
+                if (c == '"')
+                    break;
+
+                if (c == '\\') {
+                    isEscaping = true;
+                    continue;
+                }
+
+                if (isPrintable(c) || c == ' ') {
+                    r ~= c;
+                } else {
+                    errors ~= new LexError(tokenStartLocation, 1,
+                            "Warning: this string is not terminated properly");
+                    while (peek() != '\n' && peek() != '\0') { next(); }
+                    return Token(TOK.string_, r, this.tokenStartLocation);
+                }
+            }
+        }
 
         return Token(TOK.string_, r, this.tokenStartLocation);
     }

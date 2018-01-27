@@ -1,35 +1,59 @@
 import std.conv;
+import std.format;
 import std.stdio;
 import std.string;
 import colorize : fg, color, cwrite, cwriteln, cwritefln;
 
 import tokens;
 
+// Helper function to turn tabs into spaces. Harder than it looks because
+// a tab has a different size depending on its location
+private string tabs2Spaces(string s) pure {
+    enum tabLength = 8;
+    string r = "";
+    foreach (c; s) {
+        if (c == '\t') {
+            r ~= " ";
+            while (r.length % tabLength != 0) { r ~= " "; }
+        } else {
+            r ~= c;
+        }
+    }
+    return r;
+}
+
+
 class AssemblerError {
     Loc location;
     uint length;
     string message;
 
-    void printError(string fileSource) {
-        // Print location in source
-        string lineNumber = to!string(location.lineNumber) ~ " | ";
-        string lineText = fileSource
-            .split('\n')[location.lineNumber - 1];
+    private void printFileLocation(const ref string fileSource, Loc fileLoc,
+            string message = "", fg errorColor = fg.red) {
 
-        // Get offset and replace tabs with spaces
-        auto messageOffset = lineNumber.length +
-            lineText[0 .. location.charNumber].replace("\t", "    ").length;
-        lineText = lineText.replace("\t", "    ");
+        // Get line text and replace tabs with spaces
+        string lineText = fileSource.split('\n')[fileLoc.lineNumber - 1];
+        string lineNumberString = format("%3d | ", fileLoc.lineNumber);
+        auto offset = lineText[0..fileLoc.charNumber].tabs2Spaces().length;
+        lineText = lineText.tabs2Spaces();
+
+        // Write the line
+        cwriteln(lineNumberString.color(fg.blue), lineText);
+
+        // Add annotations
+        if (message.length) {
+            cwrite("    | ".color(fg.blue));
+            writef("%*s", offset, "");
+            cwriteln(("^ " ~ message).color(errorColor));
+        }
+    }
+
+    void printError(string fileSource) {
 
         cwriteln("[Lex Error] ".color(fg.red), message);
-        cwriteln(" --> ".color(fg.blue) ~ this.location.toString());
-        cwriteln(lineNumber.color(fg.blue), lineText);
-
-        writef("%*s", messageOffset, "");
-        foreach(i; 0 .. this.length) {
-            cwrite("^".color(fg.red));
-        }
-        cwriteln(" ", message.color(fg.red));
+        cwriteln("  --> ".color(fg.blue) ~ this.location.toString());
+        cwriteln("    |".color(fg.blue));
+        printFileLocation(fileSource, location, message);
     }
 }
 

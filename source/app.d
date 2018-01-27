@@ -40,8 +40,10 @@ void parseFile(string filename) {
         }
     }
     catch(LexException e) {
+        writeln();
         foreach(lexError; e.errors) {
             lexError.printError(fileText);
+            writeln();
         }
     }
 }
