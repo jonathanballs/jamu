@@ -44,3 +44,11 @@ struct Directive {
     }
 }
 
+struct Label {
+    string name;
+
+    string toString() {
+        return "<LABEL " ~ name ~ ">";
+    }
+}
+

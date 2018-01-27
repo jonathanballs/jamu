@@ -112,8 +112,6 @@ class Parser {
         Variant[] program;
 
         uint[string] labels;
-        uint programOffset; // Number of bytes deep into parsing. This is used
-                            // for evaluating labels.
 
         while (true) {
             Token t = peek();
@@ -126,15 +124,12 @@ class Parser {
                     next();
                     continue;
                 case TOK.label:
-                    // Add label to label list
-                    // TODO: Check that label is not defined
-                    labels[next().value] = programOffset;
+                    Variant v = Label(next().value);
+                    program ~= v;
                     break;
                 case TOK.instruction:
                     Variant v = this.parseInstruction();
                     program ~= v;
-                    programOffset += 4; // ARM instruction size
-
                     break;
                 case TOK.directive:
                     Variant v = this.parseDirective();
