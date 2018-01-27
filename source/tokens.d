@@ -2,6 +2,8 @@ import std.conv;
 import std.traits;
 import std.stdio;
 
+import std.typecons;
+
 static this() {
     // Generate string lists for the opcodes
     foreach (o; [EnumMembers!OPCODES]) {
@@ -14,7 +16,7 @@ static this() {
         registerStrings ~= to!string(r);
     }
     foreach (d; [EnumMembers!DIRECTIVES]) {
-        registerStrings ~= to!string(d);
+        assemblerDirectiveStrings ~= to!string(d);
     }
 }
 
@@ -22,8 +24,8 @@ enum OPCODES {
     adc, add, adr, and, b, bic, bl, bx,
     cdp, cmn, cmp, eor, ldc, ldm, ldr, mcr,
     mla, mov, mrc, mrs, msr, mul, mvn, orr,
-    rsb, rsc, sbc, stc, stm, str, sub, swi,
-    swp, teq, tst,
+    rsb, rsc, sbc, stc, stm, str, sub, subs,
+    swi, swp, teq, tst,
 };
 
 enum OPCODE_EXTS {
@@ -75,15 +77,35 @@ struct Token {
         string locString = "[" ~ to!string(location.lineNumber) ~
             ":" ~ to!string(location.charNumber) ~ "]";
 
-        string r = "<Token " ~ to!string(this.type) ~ " " ~ locString;
+        string s = "<Token " ~ to!string(this.type) ~ " " ~ locString;
 
         switch (this.type) {
             case TOK.comma:
             case TOK.newline:
-                return r ~ ">";
+                return s ~ ">";
             default:
-                return r ~ " " ~ this.value ~ ">";
+                return s ~ " " ~ this.value ~ ">";
         }
     }
+}
+
+Tuple!(OPCODES, "opcode", OPCODE_EXTS, "extension")
+                                instruction2Opcode(string ins) {
+    foreach (o; [EnumMembers!OPCODES]) {
+        // New extension defaults to always
+        if (to!string(o) == ins) {
+            return tuple!("opcode", "extension")(o, OPCODE_EXTS.al);
+        }
+
+        foreach(e; [EnumMembers!OPCODE_EXTS]) {
+            if (to!string(o) ~ to!string(e) == ins) {
+                return tuple!("opcode", "extension")(o, e);
+            }
+        }
+    }
+
+    writeln("Unknown ins " ~ ins);
+    writeln(opcodeStrings);
+    assert(0);
 }
 

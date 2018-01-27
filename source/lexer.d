@@ -115,8 +115,8 @@ class Lexer {
                 case '\t':
                     while (peek() == ' ' || peek() == '\t') { next(); }
                     break;
-                case ';': // Comments
-                    while(next() != '\n'){}
+                case ';': // Comments. Remember to log end of line
+                    while(peek() != '\n' && peek() != '\0') { next(); }
                     break;
                 case '0': // Numbers
                 ..

@@ -4,6 +4,7 @@ import std.getopt;
 import std.variant;
 
 import lexer;
+import parser;
 
 void main(string[] args)
 {
@@ -31,7 +32,8 @@ void main(string[] args)
 void parseFile(string filename) {
     auto file = File(filename);
     auto tokens = new Lexer(filename, readText(filename)).lex();
-    writeln(tokens);
+    auto program = new Parser(tokens).parse();
+    writeln(program);
 }
 
 void printHelp() {
