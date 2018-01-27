@@ -14,15 +14,15 @@ static this() {
 }
 
 string[] opcodes = [
-    "adc", "add", "and", "b",
-    "bic", "bl", "bx", "cdp",
-    "cmn", "cmp", "eor", "ldc",
-    "ldm", "ldr", "mcr", "mla",
-    "mov", "mrc", "mrs", "msr",
-    "mul", "mvn", "orr", "rsb",
-    "rsc", "sbc", "stc", "stm",
-    "str", "sub", "swi", "swp",
-    "teq", "tst",
+    "adc", "add", "adr", "and",
+    "b", "bic", "bl", "bx",
+    "cdp", "cmn", "cmp", "eor",
+    "ldc", "ldm", "ldr", "mcr",
+    "mla", "mov", "mrc", "mrs",
+    "msr", "mul", "mvn", "orr",
+    "rsb", "rsc", "sbc", "stc",
+    "stm", "str", "sub", "swi",
+    "swp", "teq", "tst",
 ];
 
 string[] opcodeExtensions = [
@@ -69,6 +69,7 @@ struct Loc {
 struct Token {
     TOK type;
     string value;
+    Loc location;
 
     string toString() {
         switch (this.type) {
