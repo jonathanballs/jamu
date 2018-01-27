@@ -4,16 +4,37 @@ import std.conv;
 import std.stdio;
 import std.string;
 
-string[] instructions = [
-    "add",
-    "bne",
-    "adreq",
-    "adrne",
-    "cmp",
-    "mov",
-    "sub",
-    "swi",
+static this() {
+    foreach(o; opcodes) {
+        instructions ~= o;
+        foreach(e; opcodeExtensions) {
+            instructions ~= o~e;
+        }
+    }
+}
+
+string[] opcodes = [
+    "adc", "add", "and", "b",
+    "bic", "bl", "bx", "cdp",
+    "cmn", "cmp", "eor", "ldc",
+    "ldm", "ldr", "mcr", "mla",
+    "mov", "mrc", "mrs", "msr",
+    "mul", "mvn", "orr", "rsb",
+    "rsc", "sbc", "stc", "stm",
+    "str", "sub", "swi", "swp",
+    "teq", "tst",
 ];
+
+string[] opcodeExtensions = [
+    "eq", "ne", "cs", "hs",
+    "cc ", "lo ", "mi ", "pl",
+    "vs ", "vc ", "hi ", "ls",
+    "ge ", "lt ", "gt ", "le",
+    "al"
+];
+
+string[] instructions; // combination of all opcodes and extensions
+
 
 string[] registerNames = [
     "r0", "r1", "r2", "r3",
@@ -24,12 +45,13 @@ string[] registerNames = [
 ];
 
 enum TOK : int {
+    comma,
     instruction,
+    label,
+    newline,
+    number,
     register,
     string_,
-    number,
-    comma,
-    newline,
 }
 
 enum commentStart = ';';
@@ -43,6 +65,16 @@ struct Loc {
 struct Token {
     TOK type;
     string value;
+
+    string toString() {
+        switch (this.type) {
+            case TOK.comma:
+            case TOK.newline:
+                return "<Token: " ~ to!string(this.type) ~ ">";
+            default:
+                return "<Token: " ~ to!string(this.type) ~ " (" ~ this.value ~ ")>";
+        }
+    }
 }
 
 class Lexer {
@@ -51,6 +83,7 @@ class Lexer {
 
     this(string input) {
         this.input = input;
+
     }
 
     char next() {
@@ -86,12 +119,16 @@ class Lexer {
 
         // Check if it is an instruction
         foreach(register; registerNames) {
-            if (r.toLower() == register) {
+            if (r.toLower() == register)
                 return Token(TOK.register, r);
-            }
         }
 
-        return Token(TOK.instruction, r);
+        foreach(instruction; instructions) {
+            if (r.toLower() == instruction)
+                return Token(TOK.instruction, r);
+        }
+
+        return Token(TOK.label, r);
     }
 
     // TODO: handle escape sequences
@@ -158,19 +195,6 @@ class Lexer {
                 default:
                     writeln("Error unexpected char " ~ next());
             }
-        }
-
-        foreach(token; tokens) {
-            switch (token.type) {
-                case TOK.comma:
-                case TOK.newline:
-                    write("<Token: " ~ to!string(token.type) ~ ">");
-                    break;
-                default:
-                    write("<Token: " ~ to!string(token.type) ~ " (" ~ token.value ~ ")>");
-                    break;
-            }
-            write(" ");
         }
 
         return tokens;
