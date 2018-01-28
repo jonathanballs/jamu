@@ -10,7 +10,8 @@ import parser;
 void main(string[] args)
 {
     // Temporary just set meadow.s as the default file
-    args ~= "testfiles/meadow.s";
+    if (args.length != 2)
+        args ~= "testfiles/meadowbadparse.s";
 
     auto parsedArgs = getopt(args);
 
@@ -43,6 +44,13 @@ void parseFile(string filename) {
         writeln();
         foreach(lexError; e.errors) {
             lexError.printError(fileText);
+            writeln();
+        }
+    }
+    catch(ParseException e) {
+        writeln();
+        foreach(parseError; e.errors) {
+            parseError.printError(fileText);
             writeln();
         }
     }

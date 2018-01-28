@@ -1,7 +1,9 @@
 import std.variant;
 import std.stdio;
+import std.conv;
 import core.stdc.stdlib : exit;
 
+import exceptions;
 import tokens;
 import ast;
 
@@ -9,6 +11,8 @@ import ast;
 class Parser {
     Token[] tokens;
     int offset;
+
+    ParseError[] errors;
 
     Token peek() {
         // If the offset has been passed then just return the end of file token
@@ -28,6 +32,10 @@ class Parser {
         auto t = peek();
         offset++;
         return t;
+    }
+
+    private void skipToEndOfLine() {
+        while(peek().type != TOK.newline) { next(); }
     }
 
     this(Token[] tokens) {
@@ -52,26 +60,38 @@ class Parser {
                 case TOK.string_:
                     Variant v = next();
                     arguments ~= v;
-                    //ins.meta.tokens ~= t;
 
                     // Next should be comma or newline
                     if (peek().type == TOK.newline) {
                         next();
                         break wloop;
                     } else if (peek().type == TOK.comma) {
-                        /*ins.meta.tokens ~= */next();
+                        next();
                         break;
+                    } else if (peek().type == TOK.number
+                            || peek().type == TOK.string_
+                            || peek().type == TOK.register
+                            || peek().type == TOK.label) {
+                        errors ~= new ParseError(next(),
+                                "Error: Arguments must be separated by" ~
+                                " a comma");
+                        skipToEndOfLine();
+                        break wloop;
                     } else {
-                        t = next();
-                        writeln("bad second token");
-                        goto default;
+                        continue;
                     }
 
+                case TOK.instruction:
+                    errors ~= new ParseError(next(),
+                            "Error: Instructions must be separated by line");
+                    skipToEndOfLine();
+                    break wloop;
+
                 default:
-                    writeln(tokens);
-                    writeln(arguments);
-                    writeln("Unexpected token at " ~ t.toString());
-                    assert(0);
+                    errors ~= new ParseError(next(), "Error: A " ~ to!string(t.type)
+                            ~ " is not a valid argument");
+                    skipToEndOfLine();
+                    break wloop;
             }
         }
 
@@ -141,6 +161,10 @@ class Parser {
                     writeln("Unexpected token " ~ t.toString());
                     assert(0);
             }
+        }
+
+        if (errors) {
+            throw new ParseException(errors);
         }
 
         return program;

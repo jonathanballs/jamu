@@ -47,6 +47,12 @@ class Lexer {
         }
     }
 
+    // In the case of errors we should just skip to the end of the line and
+    // keep on lexing.
+    private void skipToEndOfLine() {
+        while (peek() != '\n' && peek() != '\0') { next(); }
+    }
+
     // TODO: support for hexadecimal
     Token lexNumber() {
         string r = "";
@@ -108,7 +114,7 @@ class Lexer {
                         errorLoc.charNumber -= 2;
                         errors ~= new LexError(errorLoc, 2,
                                 "Unknown escape sequence '\\" ~ c ~ "'");
-                        while (peek() != '"' && peek() != '\0') { next(); }
+                        skipToEndOfLine();
                         return Token(TOK.string_, r, this.tokenStartLocation);
                 }
                 isEscaping = false;
@@ -127,7 +133,7 @@ class Lexer {
                 } else {
                     errors ~= new LexError(tokenStartLocation, 1,
                             "Warning: this string is not terminated properly");
-                    while (peek() != '\n' && peek() != '\0') { next(); }
+                    skipToEndOfLine();
                     return Token(TOK.string_, r, this.tokenStartLocation);
                 }
             }
@@ -195,7 +201,7 @@ class Lexer {
                     // Log the error and then skip to the next line
                     errors ~= new LexError(tokenStartLocation, 1,
                             "Unexpected character '" ~ next() ~ "'");
-                    while (peek() != '\n' && peek() != '\0') { next(); }
+                    skipToEndOfLine();
                     continue;
             }
         }

@@ -25,8 +25,9 @@ private string tabs2Spaces(string s) pure {
 
 class AssemblerError {
     Loc location;
-    uint length;
+    ulong length;
     string message;
+    string exceptionType;
 
     private void printFileLocation(const ref string fileSource, Loc fileLoc,
             string message = "", fg errorColor = fg.red) {
@@ -44,13 +45,16 @@ class AssemblerError {
         if (message.length) {
             cwrite("    | ".color(fg.blue));
             writef("%*s", offset, "");
-            cwriteln(("^ " ~ message).color(errorColor));
+            foreach(i; 0..this.length) {
+                cwrite("^".color(errorColor));
+            }
+            cwriteln((" " ~ message).color(errorColor));
         }
     }
 
     void printError(string fileSource) {
 
-        cwriteln("[Lex Error] ".color(fg.red), message);
+        cwriteln(("[" ~ exceptionType ~ "] ").color(fg.red), message);
         cwriteln("  --> ".color(fg.blue) ~ this.location.toString());
         cwriteln("    |".color(fg.blue));
         printFileLocation(fileSource, location, message);
@@ -62,12 +66,31 @@ class LexError : AssemblerError {
         this.location = location;
         this.length = length;
         this.message = message;
+        this.exceptionType = "Lex Error";
     }
 }
 
 class LexException: Exception {
     LexError[] errors;
     this(LexError[] errors, string file = __FILE__, size_t line = __LINE__) {
+        this.errors = errors;
+        string msg = errors[0].message;
+        super(msg, file, line);
+    }
+}
+
+class ParseError: AssemblerError {
+    this(Token t, string message) {
+        this.location = t.location;
+        this.length = t.value.length;
+        this.message = message;
+        this.exceptionType = "Parse Error";
+    }
+}
+
+class ParseException: Exception {
+    ParseError[] errors;
+    this(ParseError[] errors, string file = __FILE__, size_t line = __LINE__) {
         this.errors = errors;
         string msg = errors[0].message;
         super(msg, file, line);
