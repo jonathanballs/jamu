@@ -55,7 +55,7 @@ class Parser {
                      break wloop;
 
                 case TOK.label:
-                case TOK.number:
+                case TOK.integer:
                 case TOK.register:
                 case TOK.string_:
                     Variant v = next();
@@ -68,7 +68,7 @@ class Parser {
                     } else if (peek().type == TOK.comma) {
                         next();
                         break;
-                    } else if (peek().type == TOK.number
+                    } else if (peek().type == TOK.integer
                             || peek().type == TOK.string_
                             || peek().type == TOK.register
                             || peek().type == TOK.label) {

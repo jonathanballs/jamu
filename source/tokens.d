@@ -55,7 +55,7 @@ enum TOK : int {
     instruction,
     label,
     newline,
-    number,
+    integer,
     register,
     string_,
     eof,

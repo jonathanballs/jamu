@@ -34,7 +34,7 @@ struct Directive {
     NodeMeta meta;
 
     string toString() {
-        string s = ("<DIRECTIVE " ~ to!string(directive) ~ ">");
+        string s = ("<DIRECTIVE " ~ to!string(directive) ~ " >");
 
         foreach(arg; arguments) {
             s ~= "\n    " ~ arg.toString();
@@ -44,11 +44,38 @@ struct Directive {
     }
 }
 
+struct Register {
+    REGISTERS register;
+    NodeMeta meta;
+
+    string toString() {
+        return "<REGISTER " ~ to!string(this.register) ~ " >";
+    }
+}
+
+struct String {
+    string value;
+    NodeMeta meta;
+
+    string toString() {
+        return "<STRING \"" ~ this.meta.tokens[0].value ~ "\" >";
+    }
+}
+
+struct Integer {
+    int value;
+    NodeMeta meta;
+
+    string toString() {
+        return "<INTEGER " ~ to!string(this.value) ~ " >";
+    }
+}
+
 struct Label {
     string name;
 
     string toString() {
-        return "<LABEL " ~ name ~ ">";
+        return "<LABEL " ~ name ~ " >";
     }
 }
 

@@ -60,7 +60,7 @@ class Lexer {
             r ~= next();
         } while(isDigit(peek()));
 
-        return Token(TOK.number, r, this.tokenStartLocation);
+        return Token(TOK.integer, r, this.tokenStartLocation);
     }
 
     Token lexIdentifier() {
