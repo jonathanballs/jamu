@@ -139,6 +139,8 @@ class Lexer {
             }
         }
 
+        // Don't include opening quotes location
+        this.tokenStartLocation.charNumber++;
         return Token(TOK.string_, r, this.tokenStartLocation);
     }
 

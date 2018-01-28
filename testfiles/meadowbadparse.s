@@ -41,6 +41,8 @@ cd_nman	MOV R0, R2
 	SUBS R2, R2, #1
 	BNE cd_nman
 
+"this is a string"
+
 	ADR R0, refrain		; Fourth line (refrain)
 	SWI 3
 

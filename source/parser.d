@@ -83,7 +83,7 @@ class Parser {
 
                 case TOK.instruction:
                     errors ~= new ParseError(next(),
-                            "Error: Instructions must be separated by line");
+                            "Error: Instructions must be on separate lines");
                     skipToEndOfLine();
                     break wloop;
 
@@ -156,10 +156,10 @@ class Parser {
                     program ~= v;
                     break;
                 default:
-                    writeln(tokens);
-                    writeln(program);
-                    writeln("Unexpected token " ~ t.toString());
-                    assert(0);
+                    errors ~= new ParseError(next(),
+                            "Error: Line must start with an instruction or label");
+                    skipToEndOfLine();
+                    continue;
             }
         }
 
