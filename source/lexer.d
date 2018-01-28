@@ -89,58 +89,36 @@ class Lexer {
     }
 
     Token lexString() {
-        assert(next() == '"');
-        string r = "";
+        assert(peek() == '"');
 
-        bool isEscaping;
+        string r = "" ~ next();
+
+        bool isEscaping = false;
 
         while (true) {
             char c = next();
+            r ~= c;
+
+            if (c == '\n') {
+                errors ~= new LexError(tokenStartLocation, 1,
+                        "Error: Strings may not run over multiple lines");
+                break;
+            } else if (c == '\0') {
+                errors ~= new LexError(tokenStartLocation, 1,
+                        "Error: This string has not been terminated");
+                break;
+            }
 
             if (isEscaping) {
-                // Handle escape sequences
-                switch(c) {
-                    case 'n':
-                        r ~= '\n';
-                        break;
-                    case '"':
-                        r ~= '"';
-                        break;
-                    case '\\':
-                        r ~= '\\';
-                        break;
-                    default:
-                        auto errorLoc = location;
-                        errorLoc.charNumber -= 2;
-                        errors ~= new LexError(errorLoc, 2,
-                                "Unknown escape sequence '\\" ~ c ~ "'");
-                        skipToEndOfLine();
-                        return Token(TOK.string_, r, this.tokenStartLocation);
-                }
                 isEscaping = false;
             } else {
-
-                if (c == '"')
-                    break;
-
-                if (c == '\\') {
+                if (c == '\\')
                     isEscaping = true;
-                    continue;
-                }
-
-                if (isPrintable(c) || c == ' ') {
-                    r ~= c;
-                } else {
-                    errors ~= new LexError(tokenStartLocation, 1,
-                            "Warning: this string is not terminated properly");
-                    skipToEndOfLine();
-                    return Token(TOK.string_, r, this.tokenStartLocation);
-                }
+                else if (c == '\"')
+                    break;
             }
         }
 
-        // Don't include opening quotes location
-        this.tokenStartLocation.charNumber++;
         return Token(TOK.string_, r, this.tokenStartLocation);
     }
 

@@ -58,7 +58,7 @@ struct String {
     NodeMeta meta;
 
     string toString() {
-        return "<STRING \"" ~ this.meta.tokens[0].value ~ "\" >";
+        return "<STRING " ~ this.meta.tokens[0].value ~ " >";
     }
 }
 
@@ -73,6 +73,7 @@ struct Integer {
 
 struct Label {
     string name;
+    NodeMeta meta;
 
     string toString() {
         return "<LABEL " ~ name ~ " >";

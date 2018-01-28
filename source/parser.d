@@ -42,6 +42,57 @@ class Parser {
         this.tokens = tokens;
     }
 
+    Integer parseInteger() {
+        assert(peek().type == TOK.integer);
+        auto t = next();
+        return Integer(to!int(t.value), NodeMeta([t]));
+    }
+
+    String parseString() {
+        assert(peek().type == TOK.string_);
+        auto t = next();
+        string s;
+        // Convert escape sequences from representations
+        // Skip the opening and closing quotations
+        bool isEscaping = false;
+        foreach(i; 1..t.value.length-1) {
+            if (isEscaping) {
+                switch (t.value[i]) {
+                    case 'n':
+                        s ~= '\n';
+                        break;
+                    case 't':
+                        s ~= '\t';
+                        break;
+                    case '"':
+                        s ~= '\"';
+                        break;
+                    default:
+                        errors ~= new ParseError(t, "Error: Invalid escape " ~
+                                "sequence '\\" ~ t.value[i] ~ "'");
+                }
+            } else if (t.value[i] == '\\') {
+                isEscaping = true;
+            } else {
+                s ~= t.value[i];
+            }
+        }
+
+        return String(s, NodeMeta([t]));
+    }
+
+    Register parseRegister() {
+        assert(peek().type == TOK.register);
+        auto t = next();
+        return Register(registerToEnum(t.value), NodeMeta([t]));
+    }
+
+    Label parseLabel() {
+        assert(peek().type == TOK.label);
+        auto t = next();
+        return Label(t.value, NodeMeta([t]));
+    }
+
     Variant[] parseArguments() {
 
         Variant[] arguments;
@@ -54,12 +105,19 @@ class Parser {
                      next();
                      break wloop;
 
-                case TOK.label:
+                case TOK.string_:
                 case TOK.integer:
                 case TOK.register:
-                case TOK.string_:
-                    Variant v = next();
-                    arguments ~= v;
+                case TOK.label:
+                    if (peek().type == TOK.string_) {
+                        arguments ~= cast(Variant)parseString();
+                    } else if (peek().type == TOK.integer) {
+                        arguments ~= cast(Variant)parseInteger();
+                    } else if (peek().type == TOK.register) {
+                        arguments ~= cast(Variant)parseRegister();
+                    } else if (peek().type == TOK.label) {
+                        arguments ~= cast(Variant)parseLabel();
+                    }
 
                     // Next should be comma or newline
                     if (peek().type == TOK.newline) {

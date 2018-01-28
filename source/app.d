@@ -11,7 +11,7 @@ void main(string[] args)
 {
     // Temporary just set meadow.s as the default file
     if (args.length != 2)
-        args ~= "testfiles/meadowbadparse.s";
+        args ~= "testfiles/meadow.s";
 
     auto parsedArgs = getopt(args);
 

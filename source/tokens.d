@@ -123,3 +123,12 @@ DIRECTIVES directiveToEnum(string directive) {
     assert(0);
 }
 
+REGISTERS registerToEnum(string register) {
+    foreach(r; [EnumMembers!REGISTERS]) {
+        if (to!string(r) == register)
+            return r;
+    }
+
+    assert(0);
+}
+
