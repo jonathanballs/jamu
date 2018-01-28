@@ -117,6 +117,8 @@ class Parser {
                         arguments ~= cast(Variant)parseRegister();
                     } else if (peek().type == TOK.label) {
                         arguments ~= cast(Variant)parseLabel();
+                    } else {
+                        assert(0);
                     }
 
                     // Next should be comma or newline
