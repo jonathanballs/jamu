@@ -5,6 +5,7 @@ import std.string;
 import colorize : fg, color, cwrite, cwriteln, cwritefln;
 
 import tokens;
+import ast;
 
 // Helper function to turn tabs into spaces. Harder than it looks because
 // a tab has a different size depending on its location
@@ -25,7 +26,7 @@ private string tabs2Spaces(string s) pure {
 
 class AssemblerError {
     Loc location;
-    ulong length;
+    ulong length = 1;
     string message;
     string exceptionType;
 
@@ -91,6 +92,24 @@ class ParseError: AssemblerError {
 class ParseException: Exception {
     ParseError[] errors;
     this(ParseError[] errors, string file = __FILE__, size_t line = __LINE__) {
+        this.errors = errors;
+        string msg = errors[0].message;
+        super(msg, file, line);
+    }
+}
+
+class TypeError: AssemblerError {
+    this(Instruction ins, string message) {
+        this.location = ins.meta.location;
+        this.length = ins.meta.tokens[0].value.length;
+        this.message = message;
+        this.exceptionType = "Type Error";
+    }
+}
+
+class TypeException : Exception {
+    TypeError[] errors;
+    this(TypeError[] errors, string file = __FILE__, size_t line = __LINE__) {
         this.errors = errors;
         string msg = errors[0].message;
         super(msg, file, line);

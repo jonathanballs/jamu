@@ -6,6 +6,8 @@ import std.variant;
 import exceptions;
 import lexer;
 import parser;
+import labelResolver;
+import typeChecker;
 
 void main(string[] args)
 {
@@ -34,11 +36,18 @@ void main(string[] args)
 void parseFile(string filename) {
     auto fileText = readText(filename);
     try {
+
         auto tokens = new Lexer(filename, fileText).lex();
         auto program = new Parser(tokens).parse();
-        foreach(p; program) {
+        //program = new LabelResolver(program).resolveLabels();
+
+        new TypeChecker(program).checkTypes();
+
+        // Print the ast
+        foreach(p; program.nodes) {
             writeln(p);
         }
+
     }
     catch(LexException e) {
         writeln();
@@ -54,9 +63,18 @@ void parseFile(string filename) {
             writeln();
         }
     }
+    catch(TypeException e) {
+        writeln();
+        foreach(typeError; e.errors) {
+            typeError.printError(fileText);
+            writeln();
+        }
+    }
 }
 
 void printHelp() {
-    writeln("help :DD");
+    writeln(
+        "usage: jasm <filename>"
+    );
 }
 

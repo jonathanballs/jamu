@@ -26,7 +26,9 @@ enum OPCODES {
     cmn, cmp, eor, ldc, ldm, ldr, mcr, mla,
     mov, mrc, mrs, lsr, mul, mvn, orr, rsb,
     rsc, sbc, stc, stm, str, sub, swi, swp,
-    teq, tst
+    teq, tst,
+    // Pseudo instructions
+    adr, subs
 };
 
 enum OPCODE_EXTS {

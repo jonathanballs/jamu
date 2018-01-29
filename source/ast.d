@@ -10,6 +10,10 @@ struct NodeMeta {
     }
 }
 
+struct Program {
+    Variant[] nodes;
+}
+
 struct Instruction {
     OPCODES opcode;
     OPCODE_EXTS extension;
@@ -77,6 +81,14 @@ struct Label {
 
     string toString() {
         return "<LABEL " ~ name ~ " >";
+    }
+}
+
+struct Address {
+    uint value;
+
+    string toString() {
+        return "<ADDRESS " ~ to!string(value) ~ " >";
     }
 }
 

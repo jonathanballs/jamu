@@ -26,7 +26,7 @@ next	MOV R0, R1
 	ADRNE R0, men
 	SWI 3
 	ADR R0, wentmow
-	SWI 3
+	SWI 3, #4
 
 	ADR R0, refrain		; Second line (refrain)
 	SWI 3

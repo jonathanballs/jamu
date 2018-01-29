@@ -188,10 +188,8 @@ class Parser {
         return ins;
     }
 
-    Variant[] parse() {
-        Variant[] program;
-
-        uint[string] labels;
+    Program parse() {
+        Variant[] nodes;
 
         while (true) {
             Token t = peek();
@@ -205,15 +203,15 @@ class Parser {
                     continue;
                 case TOK.label:
                     Variant v = Label(next().value);
-                    program ~= v;
+                    nodes ~= v;
                     break;
                 case TOK.instruction:
                     Variant v = this.parseInstruction();
-                    program ~= v;
+                    nodes ~= v;
                     break;
                 case TOK.directive:
                     Variant v = this.parseDirective();
-                    program ~= v;
+                    nodes ~= v;
                     break;
                 default:
                     errors ~= new ParseError(next(),
@@ -227,7 +225,7 @@ class Parser {
             throw new ParseException(errors);
         }
 
-        return program;
+        return Program(nodes);
     }
 }
 
