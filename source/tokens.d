@@ -22,11 +22,11 @@ static this() {
 }
 
 enum OPCODES {
-    adc, add, adr, and, b, bic, bl, bx,
-    cdp, cmn, cmp, eor, ldc, ldm, ldr, mcr,
-    mla, mov, mrc, mrs, msr, mul, mvn, orr,
-    rsb, rsc, sbc, stc, stm, str, sub, subs,
-    swi, swp, teq, tst,
+    adc, add, and, b, bic, bl, bx, cdp,
+    cmn, cmp, eor, ldc, ldm, ldr, mcr, mla,
+    mov, mrc, mrs, lsr, mul, mvn, orr, rsb,
+    rsc, sbc, stc, stm, str, sub, swi, swp,
+    teq, tst
 };
 
 enum OPCODE_EXTS {
