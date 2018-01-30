@@ -105,6 +105,13 @@ class TypeError: AssemblerError {
         this.message = message;
         this.exceptionType = "Type Error";
     }
+
+    this(Token tok, string message) {
+        this.location = tok.location;
+        this.length = tok.value.length;
+        this.message = message;
+        this.exceptionType = "Type Error";
+    }
 }
 
 class TypeException : Exception {

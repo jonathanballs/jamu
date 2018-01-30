@@ -202,7 +202,8 @@ class Parser {
                     next();
                     continue;
                 case TOK.label:
-                    Variant v = Label(next().value);
+                    Variant v = Label(peek().value, NodeMeta([peek()]));
+                    next();
                     nodes ~= v;
                     break;
                 case TOK.instruction:

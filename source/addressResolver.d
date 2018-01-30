@@ -1,11 +1,15 @@
+import std.conv;
 import std.variant;
 import std.stdio;
 import tokens;
 import ast;
+import exceptions;
 
 class AddressResolver {
 
     Program program;
+
+    TypeError[] errors;
 
     this(Program program_) {
         program = program_;
@@ -13,7 +17,7 @@ class AddressResolver {
 
     Program resolve() {
         Program resolvedProgram;
-        uint[string] labels;
+        Label[string] labels;
         // Step one get a list of all labels
 
         uint currentAddress;
@@ -23,13 +27,22 @@ class AddressResolver {
                 label.address = currentAddress;
                 resolvedProgram.nodes ~= cast(Variant)label;
 
-                labels[label.name] = currentAddress;
+                if (label.name !in labels) {
+                    labels[label.name] = label;
+                } else {
+                    errors ~= new TypeError(label.meta.tokens[0],
+                            "Error: Label '" ~ label.name ~ "' was already"
+                            ~ " defined on line "
+                            ~ to!string(labels[label.name].meta.location.lineNumber));
+                }
 
             } else if (node.type == typeid(Instruction)) {
+
                 auto ins = node.get!(Instruction);
                 ins.address = currentAddress;
                 currentAddress += 4;
                 resolvedProgram.nodes ~= cast(Variant)ins;
+
             } else if (node.type == typeid(Directive)) {
                 auto dir = node.get!(Directive);
                 dir.address = currentAddress;
@@ -55,9 +68,13 @@ class AddressResolver {
                     currentAddress += 4 - (currentAddress % 4);
                 }
             } else {
-                // Raise a type error
+                // Should have been caught by the parser.
                 assert(0);
             }
+        }
+
+        if (errors) {
+            throw new TypeException(errors);
         }
 
         return resolvedProgram;
