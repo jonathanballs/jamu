@@ -32,9 +32,8 @@ enum OPCODES {
 };
 
 enum OPCODE_EXTS {
-    eq, ne, cs, hs, cc ,lo, mi, pl,
-    vs, vc, hi, ls, ge ,lt, gt ,le,
-    al,
+    eq, ne, cs, cc, mi, pl, vs, vc,
+    hi, ls, ge, lt, gt, le, al
 }
 
 enum REGISTERS {

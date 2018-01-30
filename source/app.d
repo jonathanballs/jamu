@@ -1,5 +1,6 @@
 import std.stdio;
 import std.file;
+import std.format;
 import std.getopt;
 import std.variant;
 
@@ -7,6 +8,7 @@ import exceptions;
 import lexer;
 import parser;
 import addressResolver;
+import codeGenerator;
 
 void main(string[] args)
 {
@@ -40,11 +42,15 @@ void parseFile(string filename) {
         auto program = new Parser(tokens).parse();
         program = new AddressResolver(program).resolve();
 
-        // Print the ast
-        foreach(p; program.nodes) {
-            writeln(p);
-        }
+        auto compiledCode = new CodeGenerator(program).generateCode();
 
+        // Output the generated code
+        import std.digest.digest;
+        foreach(i; 0..(compiledCode.length / 4)) {
+            write("0x");
+            write(format!("%04x")(i*4));
+            writeln("    0x", compiledCode[i*4..(i+1)*4].toHexString());
+        }
     }
     catch(LexException e) {
         writeln();

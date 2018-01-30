@@ -47,9 +47,9 @@ class AddressResolver {
             } else if (node.type == typeid(Directive)) {
                 auto dir = node.get!(Directive);
                 dir.address = currentAddress;
-                resolvedProgram.nodes ~= cast(Variant)dir;
 
                 if (dir.directive == DIRECTIVES.defw) {
+                    dir.size = 4;
                     currentAddress += 4;
                 } else if (dir.directive == DIRECTIVES.defb) {
                     uint directiveSize;
@@ -63,11 +63,14 @@ class AddressResolver {
                         }
                     }
                     currentAddress += directiveSize;
+                    dir.size = directiveSize;
                 } else if (dir.directive == DIRECTIVES.align_) {
                     // Round up to nearerst four
-                    writeln(currentAddress);
+                    dir.size = 4 - (currentAddress % 4);
                     currentAddress += 4 - (currentAddress % 4);
                 }
+
+                resolvedProgram.nodes ~= cast(Variant)dir;
             } else {
                 // Should have been caught by the parser.
                 assert(0);
