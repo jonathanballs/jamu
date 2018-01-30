@@ -1,15 +1,24 @@
-import std.stdio;
-import std.conv;
 import std.bitmanip;
+import std.conv;
+import std.stdio;
+import std.variant;
+
 import ast;
-import tokens;
 import exceptions;
+import tokens;
 
 struct BranchInsn {
     mixin(bitfields!(
         int, "offset",     24,
         bool, "linkbit",    1,
         uint, "opcode",     3,
+        uint, "cond",       4));
+}
+
+struct InterruptInsn {
+    mixin(bitfields!(
+        uint, "comment",    24,
+        uint, "opcode",     4,
         uint, "cond",       4));
 }
 
@@ -26,21 +35,31 @@ class CodeGenerator {
         program = program_;
     }
 
+    private bool ensureArgumentTypes(Instruction insn, TypeInfo[] types) {
+        if (insn.arguments.length != types.length) {
+            errors ~= new TypeError(getToken(insn), to!string(insn.opcode)
+                    ~ " requires " ~ to!string(1) ~ " arguments");
+            return false;
+        }
+        foreach(i, arg; insn.arguments) {
+            if (arg.type != types[i]) {
+                errors ~= new TypeError(getToken(insn), "Expected " ~ to!string(types[i])
+                        ~ " but got " ~ to!string(arg.type));
+                return false;
+            }
+        }
+        return true;
+    }
+
+
     ubyte[] generateBranchInstruction(Instruction insn) {
         assert(insn.opcode == OPCODES.b || insn.opcode == OPCODES.bl);
 
-        // Check argument types
-        if (insn.arguments.length != 1) {
-            errors ~= new TypeError(getToken(insn), "Requires 1 argument");
+        if (!ensureArgumentTypes(insn, [typeid(Address)])) {
             return [0, 0, 0, 0];
         }
 
-        if (insn.arguments[0].type != typeid(Address)) {
-            errors ~= new TypeError(getToken(insn), "Requires argument to be an address");
-            return [0, 0, 0, 0];
-        }
-
-        BranchInsn *branchInsn = new BranchInsn;
+        BranchInsn* branchInsn = new BranchInsn;
         branchInsn.cond = cast(uint)insn.extension;
         branchInsn.opcode = 0b101;
         branchInsn.linkbit = insn.opcode == OPCODES.bl;
@@ -49,6 +68,7 @@ class CodeGenerator {
         // bits left. This is added to the program counter thus it must
         // take into account the prefetch which causes the PC to be 2 words
         // (8 bytes) ahead of 
+        // TODO: Ensure that offset fits in the 24 bit space
         uint targetAddress = insn.arguments[0].get!Address.value;
         int offset = (targetAddress - insn.address);
         branchInsn.offset = ((offset - 8) >> 2);
@@ -56,14 +76,30 @@ class CodeGenerator {
         return cast(ubyte[]) branchInsn[0..1];
     }
 
+    ubyte[] generateInterruptInstruction(Instruction insn) {
+        assert(insn.opcode == OPCODES.swi);
+
+        if (!ensureArgumentTypes(insn, [typeid(Integer)])) {
+            return [0, 0, 0, 0];
+        }
+
+        InterruptInsn* swiInsn = new InterruptInsn;
+        swiInsn.cond = cast(uint)insn.extension;
+        swiInsn.opcode = 0b1111;
+        swiInsn.comment = insn.arguments[0].get!Integer.value;
+
+        return cast(ubyte[]) swiInsn[0..1];
+    }
+
     ubyte[] generateInstruction(Instruction ins) {
         switch (ins.opcode) {
             case OPCODES.b:
             case OPCODES.bl:
                 return generateBranchInstruction(ins);
+            case OPCODES.swi:
+                return generateInterruptInstruction(ins);
             default:
-                ubyte[] compInsn = [0, 0, 0, 0];
-                return compInsn;
+                return [0, 0, 0, 0];
         }
     }
 
@@ -86,8 +122,13 @@ class CodeGenerator {
                 assert(node.get!Instruction.address == code.length);
                 code ~= generateInstruction(node.get!Instruction);
             } else if (node.type == typeid(Directive)) {
+                assert(node.get!Directive.address == code.length);
                 code ~= generateDirective(node.get!Directive);
             }
+        }
+
+        if (errors) {
+            throw new TypeException(errors);
         }
 
         return code;
