@@ -84,6 +84,9 @@ class Lexer {
             if (r.toLower() == directive)
                 return Token(TOK.directive, r.toLower(), this.tokenStartLocation);
         }
+        if (r.toLower() == "align") {
+            return Token(TOK.directive, r.toLower(), this.tokenStartLocation);
+        }
 
         return Token(TOK.label, r, this.tokenStartLocation);
     }

@@ -117,6 +117,10 @@ Tuple!(OPCODES, "opcode", OPCODE_EXTS, "extension")
 }
 
 DIRECTIVES directiveToEnum(string directive) {
+    if (directive == "align") {
+        return DIRECTIVES.align_;
+    }
+
     foreach(d; [EnumMembers!DIRECTIVES]) {
         if (to!string(d) == directive)
             return d;

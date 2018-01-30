@@ -38,7 +38,7 @@ void parseFile(string filename) {
 
         auto tokens = new Lexer(filename, fileText).lex();
         auto program = new Parser(tokens).parse();
-        //program = new LabelResolver(program).resolveLabels();
+        program = new AddressResolver(program).resolve();
 
         // Print the ast
         foreach(p; program.nodes) {
