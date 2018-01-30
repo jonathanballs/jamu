@@ -6,8 +6,7 @@ import std.variant;
 import exceptions;
 import lexer;
 import parser;
-import labelResolver;
-import typeChecker;
+import addressResolver;
 
 void main(string[] args)
 {
@@ -40,8 +39,6 @@ void parseFile(string filename) {
         auto tokens = new Lexer(filename, fileText).lex();
         auto program = new Parser(tokens).parse();
         //program = new LabelResolver(program).resolveLabels();
-
-        new TypeChecker(program).checkTypes();
 
         // Print the ast
         foreach(p; program.nodes) {

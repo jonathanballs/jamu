@@ -1,6 +1,6 @@
 import ast;
 
-class LabelResolver {
+class AddressResolver {
 
     Program program;
 
