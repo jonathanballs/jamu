@@ -124,9 +124,10 @@ struct Label {
 
 struct Address {
     uint value;
+    NodeMeta meta;
 
     string toString() {
-        return "<ADDRESS " ~ to!string(value) ~ " >";
+        return "<ADDRESS " ~ format!"0x%08x"(value) ~ " >";
     }
 }
 

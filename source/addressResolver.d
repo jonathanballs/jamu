@@ -18,8 +18,9 @@ class AddressResolver {
     Program resolve() {
         Program resolvedProgram;
         Label[string] labels;
-        // Step one get a list of all labels
 
+        // First pass
+        // Calculate addresses of all top level nodes
         uint currentAddress;
         foreach(ref node; program.nodes) {
             if (node.type == typeid(Label)) {
@@ -70,6 +71,42 @@ class AddressResolver {
             } else {
                 // Should have been caught by the parser.
                 assert(0);
+            }
+        }
+
+        // Helper function that can resolve both instruction and directive
+        // arguments
+        Variant resolveArgumentLabels(T)(Variant v) {
+
+            T node = v.get!(T);
+
+            foreach (i, arg; node.arguments) {
+
+                // If a label then replace it with an address
+                if (arg.type == typeid(Label)) {
+                    auto argL = arg.get!(Label);
+
+                    if (argL.name !in labels) {
+                        errors ~= new TypeError(argL.meta.tokens[0],
+                                "Error: This label as not been defined.");
+                        continue;
+                    } else {
+                        auto addr = Address(labels[argL.name].address, argL.meta);
+                        node.arguments[i] = cast(Variant)addr;
+                    }
+                }
+            }
+
+            return cast(Variant) node;
+        }
+
+        // Second pass
+        // Evaluate arguments that are labels
+        foreach (ref node; resolvedProgram.nodes) {
+            if (node.type == typeid(Instruction)) {
+                node = resolveArgumentLabels!Instruction(node);
+            } else if (node.type == typeid(Directive)) {
+                node = resolveArgumentLabels!Directive(node);
             }
         }
 
