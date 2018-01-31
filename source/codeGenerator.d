@@ -26,8 +26,8 @@ struct DataProcessingInsn {
     mixin(bitfields!(
         uint, "operand2",   12,
         uint, "destReg",    4,
-        uint, "operantReg", 4,
-        bool, "setCodes",   1,
+        uint, "operandReg", 4,
+        bool, "setBit",     1,
         uint, "opcode",     4,
         bool, "immediate",  1,
         uint, "",           2,
@@ -50,7 +50,7 @@ class CodeGenerator {
     private bool ensureArgumentTypes(Instruction insn, TypeInfo[] types) {
         if (insn.arguments.length != types.length) {
             errors ~= new TypeError(getToken(insn), to!string(insn.opcode)
-                    ~ " requires " ~ to!string(1) ~ " arguments");
+                    ~ " requires " ~ to!string(insn.arguments.length) ~ " arguments");
             return false;
         }
         foreach(i, arg; insn.arguments) {
@@ -113,13 +113,46 @@ class CodeGenerator {
             argTypes = [typeid(Register), typeid(Register), typeid(Integer)];
         }
 
+        uint opcode;
+        switch(insn.opcode) {
+            case OPCODES.and: opcode = 0b0000; break;
+            case OPCODES.eor: opcode = 0b0001; break;
+            case OPCODES.sub: opcode = 0b0010; break;
+            case OPCODES.rsb: opcode = 0b0011; break;
+            case OPCODES.add: opcode = 0b0100; break;
+            case OPCODES.adc: opcode = 0b0101; break;
+            case OPCODES.sbc: opcode = 0b0110; break;
+            case OPCODES.rsc: opcode = 0b0111; break;
+            //case OPCODES.tst: opcode = 0b1000; break;
+            //case OPCODES.teq: opcode = 0b1001; break;
+            //case OPCODES.cmp: opcode = 0b1010; break;
+            //case OPCODES.cmn: opcode = 0b1011; break;
+            case OPCODES.orr: opcode = 0b1100; break;
+            case OPCODES.bic: opcode = 0b1110; break;
+            default: assert(0);
+        }
+
         if (!ensureArgumentTypes(insn, argTypes)) {
             return [0, 0, 0, 0];
         }
 
         DataProcessingInsn* dataInsn = new DataProcessingInsn;
         dataInsn.cond = cast(uint)insn.extension;
-        dataInsn.opcode = cast(uint)insn.opcode;
+        dataInsn.opcode = opcode;
+        dataInsn.setBit = insn.setBit;
+        dataInsn.destReg = to!uint(insn.arguments[0].get!Register.register);
+        dataInsn.operandReg = to!uint(insn.arguments[1].get!Register.register);
+
+        auto op2 = insn.arguments[2];
+        if (op2.type == typeid(Integer)) {
+            dataInsn.immediate = true;
+            dataInsn.operand2 = op2.get!Integer.value;
+        } else if (op2.type == typeid(Register)) {
+            dataInsn.immediate = false;
+            dataInsn.operand2 = to!int(op2.get!Register.register);
+        } else {
+            assert(0);
+        }
 
         return cast(ubyte[]) dataInsn[0..1];
     }
@@ -139,13 +172,13 @@ class CodeGenerator {
             case OPCODES.adc:
             case OPCODES.sbc:
             case OPCODES.rsc:
+            //case OPCODES.tst:
+            //case OPCODES.teq:
+            //case OPCODES.cmp:
+            //case OPCODES.cmn:
             case OPCODES.orr:
             case OPCODES.bic:
                 return generateDataProcessingInstruction(ins);
-            case OPCODES.tst:
-            case OPCODES.teq:
-            case OPCODES.cmp:
-            case OPCODES.cmn:
                 // return unwritten data processing insn
             default:
                 return [0, 0, 0, 0];
