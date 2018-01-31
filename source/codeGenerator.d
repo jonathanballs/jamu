@@ -22,6 +22,18 @@ struct InterruptInsn {
         uint, "cond",       4));
 }
 
+struct DataProcessingInsn {
+    mixin(bitfields!(
+        uint, "operand2",   12,
+        uint, "destReg",    4,
+        uint, "operantReg", 4,
+        bool, "setCodes",   1,
+        uint, "opcode",     4,
+        bool, "immediate",  1,
+        uint, "",           2,
+        uint, "cond",       4));
+}
+
 Token getToken(T)(T t) {
     return t.meta.tokens[0];
 }
@@ -91,6 +103,27 @@ class CodeGenerator {
         return cast(ubyte[]) swiInsn[0..1];
     }
 
+    ubyte[] generateDataProcessingInstruction(Instruction insn) {
+
+        TypeInfo[] argTypes;
+        if (insn.arguments.length == 3
+                && insn.arguments[2].type == typeid(Register)) {
+            argTypes = [typeid(Register), typeid(Register), typeid(Register)];
+        } else {
+            argTypes = [typeid(Register), typeid(Register), typeid(Integer)];
+        }
+
+        if (!ensureArgumentTypes(insn, argTypes)) {
+            return [0, 0, 0, 0];
+        }
+
+        DataProcessingInsn* dataInsn = new DataProcessingInsn;
+        dataInsn.cond = cast(uint)insn.extension;
+        dataInsn.opcode = cast(uint)insn.opcode;
+
+        return cast(ubyte[]) dataInsn[0..1];
+    }
+
     ubyte[] generateInstruction(Instruction ins) {
         switch (ins.opcode) {
             case OPCODES.b:
@@ -98,6 +131,22 @@ class CodeGenerator {
                 return generateBranchInstruction(ins);
             case OPCODES.swi:
                 return generateInterruptInstruction(ins);
+            case OPCODES.and:
+            case OPCODES.eor:
+            case OPCODES.sub:
+            case OPCODES.rsb:
+            case OPCODES.add:
+            case OPCODES.adc:
+            case OPCODES.sbc:
+            case OPCODES.rsc:
+            case OPCODES.orr:
+            case OPCODES.bic:
+                return generateDataProcessingInstruction(ins);
+            case OPCODES.tst:
+            case OPCODES.teq:
+            case OPCODES.cmp:
+            case OPCODES.cmn:
+                // return unwritten data processing insn
             default:
                 return [0, 0, 0, 0];
         }
