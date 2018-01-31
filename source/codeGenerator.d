@@ -47,6 +47,22 @@ class CodeGenerator {
         program = program_;
     }
 
+    private bool ensureArgumentTypes(Directive dir, TypeInfo[] types) {
+        if (dir.arguments.length != types.length) {
+            errors ~= new TypeError(getToken(dir), to!string(dir.directive)
+                    ~ " requires " ~ to!string(dir.arguments.length) ~ " arguments");
+            return false;
+        }
+        foreach(i, arg; dir.arguments) {
+            if (arg.type != types[i]) {
+                errors ~= new TypeError(getToken(dir), "Expected " ~ to!string(types[i])
+                        ~ " but got " ~ to!string(arg.type));
+                return false;
+            }
+        }
+        return true;
+    }
+
     private bool ensureArgumentTypes(Instruction insn, TypeInfo[] types) {
         if (insn.arguments.length != types.length) {
             errors ~= new TypeError(getToken(insn), to!string(insn.opcode)
@@ -187,8 +203,30 @@ class CodeGenerator {
 
     ubyte[] generateDirective(Directive dir) {
         ubyte[] r;
-        foreach(i; 0..dir.size) {
-            r ~= 0;
+        if (dir.directive == DIRECTIVES.align_) {
+            ensureArgumentTypes(dir, []);
+            foreach(i; 0..dir.size) {
+                r ~= 0;
+            }
+        } else if (dir.directive == DIRECTIVES.defw) {
+            auto arg = dir.arguments[0];
+            if (arg.type == typeid(Integer)) {
+                r ~= (cast(ubyte *)&arg.get!Integer.value)[0..uint.sizeof];
+            }
+        } else if (dir.directive == DIRECTIVES.defb) {
+            foreach(arg; dir.arguments) {
+                if (arg.type == typeid(Integer)) {
+                    auto argI = arg.get!Integer;
+                    r ~= cast(ubyte)argI.value;
+                } else if (arg.type == typeid(String)) {
+                    char[] s = arg.get!String.value.dup;
+                    r ~= cast(ubyte[])s;
+                } else {
+                    assert(0);
+                }
+            }
+        } else {
+            assert(0);
         }
 
         return r;
