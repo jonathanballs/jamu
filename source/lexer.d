@@ -3,6 +3,7 @@ import std.ascii;
 import std.conv;
 import std.stdio;
 import std.string;
+import std.algorithm : canFind;
 
 import tokens;
 import exceptions;
@@ -69,26 +70,14 @@ class Lexer {
             r ~= next();
         } while(isAlphaNum(peek()) || peek() == '_');
 
-        // Check if it is an instruction
-        foreach(register; registerStrings) {
-            if (r.toLower() == register)
-                return Token(TOK.register, r.toLower(), this.tokenStartLocation);
+        // Check if it's a keyword otherwise it's a label
+        if (r.toLower() in keywordTokens) {
+            auto t = keywordTokens[r.toLower()];
+            t.location = this.tokenStartLocation;
+            return t;
+        } else {
+            return Token(TOK.label, r, this.tokenStartLocation);
         }
-
-        foreach(instruction; opcodeStrings) {
-            if (r.toLower() == instruction)
-                return Token(TOK.instruction, r.toLower(), this.tokenStartLocation);
-        }
-
-        foreach(directive; assemblerDirectiveStrings) {
-            if (r.toLower() == directive)
-                return Token(TOK.directive, r.toLower(), this.tokenStartLocation);
-        }
-        if (r.toLower() == "align") {
-            return Token(TOK.directive, r.toLower(), this.tokenStartLocation);
-        }
-
-        return Token(TOK.label, r, this.tokenStartLocation);
     }
 
     Token lexString() {

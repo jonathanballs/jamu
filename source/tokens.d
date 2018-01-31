@@ -1,3 +1,4 @@
+import std.algorithm : canFind;
 import std.conv;
 import std.traits;
 import std.stdio;
@@ -5,19 +6,47 @@ import std.string;
 
 import std.typecons;
 
+Token[string] keywordTokens;
+
 static this() {
     // Generate string lists for the opcodes
     foreach (o; [EnumMembers!OPCODES]) {
-        opcodeStrings ~= to!string(o);
+        auto opcodeString = to!string(o);
+        keywordTokens[opcodeString] = Token(TOK.instruction, opcodeString);
+
+        // Opcode conditions
         foreach(e; [EnumMembers!OPCODE_EXTS]) {
-            opcodeStrings ~= to!string(o)~to!string(e);
+            auto condString = to!string(e);
+            keywordTokens[opcodeString ~ condString] =
+                Token(TOK.instruction, opcodeString ~ condString);
         }
+
+        // Data processing instruction extensions
+        if (dataProcessingOpcodes.canFind(o)) {
+            keywordTokens[opcodeString ~ "s"] =
+                Token(TOK.instruction, opcodeString ~ "s");
+
+            // Opcode conditions
+            foreach(e; [EnumMembers!OPCODE_EXTS]) {
+                auto condString = to!string(e);
+                keywordTokens[opcodeString ~ condString ~ "s"] =
+                    Token(TOK.instruction, opcodeString ~ condString ~ "s");
+            }
+        }
+
     }
+
     foreach (r; [EnumMembers!REGISTERS]) {
-        registerStrings ~= to!string(r);
+        auto registerString = to!string(r);
+        keywordTokens[registerString] = Token(TOK.register, registerString);
     }
     foreach (d; [EnumMembers!DIRECTIVES]) {
-        assemblerDirectiveStrings ~= to!string(d);
+        auto directiveString = to!string(d);
+        if (d == DIRECTIVES.align_) {
+            directiveString = "align";
+        }
+
+        keywordTokens[directiveString] = Token(TOK.directive, directiveString);
     }
 }
 
@@ -28,8 +57,15 @@ enum OPCODES {
     rsc, sbc, stc, stm, str, sub, swi, swp,
     teq, tst,
     // Pseudo instructions
-    adr, subs
+    adr,
 };
+
+OPCODES[] dataProcessingOpcodes = [
+    OPCODES.and, OPCODES.eor, OPCODES.sub, OPCODES.rsb,
+    OPCODES.add, OPCODES.adc, OPCODES.sbc, OPCODES.rsc,
+    OPCODES.tst, OPCODES.teq, OPCODES.cmp, OPCODES.cmn,
+    OPCODES.orr, OPCODES.mov, OPCODES.bic, OPCODES.mvn,
+];
 
 enum OPCODE_EXTS {
     eq, ne, cs, cc, mi, pl, vs, vc,
@@ -45,10 +81,6 @@ enum REGISTERS {
 enum DIRECTIVES {
     defb, defw, align_, include
 }
-
-string[] opcodeStrings;
-string[] registerStrings;
-string[] assemblerDirectiveStrings;
 
 enum TOK : int {
     comma,
@@ -95,23 +127,34 @@ struct Token {
     }
 }
 
-Tuple!(OPCODES, "opcode", OPCODE_EXTS, "extension")
+Tuple!(OPCODES, "opcode", OPCODE_EXTS, "extension", bool, "setBit")
                                 instruction2Opcode(string ins) {
     foreach (o; [EnumMembers!OPCODES]) {
         // New extension defaults to always
-        if (to!string(o) == ins) {
-            return tuple!("opcode", "extension")(o, OPCODE_EXTS.al);
+        auto opcodeString = to!string(o);
+        if (opcodeString == ins) {
+            return tuple!("opcode", "extension", "setBit")(o, OPCODE_EXTS.al, false);
         }
 
         foreach(e; [EnumMembers!OPCODE_EXTS]) {
-            if (to!string(o) ~ to!string(e) == ins) {
-                return tuple!("opcode", "extension")(o, e);
+            if (opcodeString ~ to!string(e) == ins) {
+                return tuple!("opcode", "extension", "setBit")(o, e, false);
+            }
+        }
+
+        // Data processing instruction setbits
+        if (opcodeString ~ "s" == ins) {
+            return tuple!("opcode", "extension", "setBit")(o, OPCODE_EXTS.al, true);
+        }
+
+        foreach(e; [EnumMembers!OPCODE_EXTS]) {
+            if (opcodeString ~ to!string(e) ~ "s" == ins) {
+                return tuple!("opcode", "extension", "setBit")(o, e, true);
             }
         }
     }
 
     writeln("Unknown ins " ~ ins);
-    writeln(opcodeStrings);
     assert(0);
 }
 

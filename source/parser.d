@@ -181,6 +181,7 @@ class Parser {
         auto opc = instruction2Opcode(t.value);
         ins.opcode = opc.opcode;
         ins.extension = opc.extension;
+        ins.setBit = opc.setBit;
         ins.meta.tokens ~= t;
 
         ins.arguments = parseArguments();

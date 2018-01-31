@@ -18,6 +18,8 @@ struct Program {
 struct Instruction {
     OPCODES opcode;
     OPCODE_EXTS extension;
+    bool setBit;
+
     Variant[] arguments;
     NodeMeta meta;
 
