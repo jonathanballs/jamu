@@ -1,3 +1,4 @@
+import std.algorithm : canFind;
 import std.bitmanip;
 import std.conv;
 import std.stdio;
@@ -121,6 +122,8 @@ class CodeGenerator {
 
     ubyte[] generateDataProcessingInstruction(Instruction insn) {
 
+        assert(dataProcessingOpcodes.canFind(insn.opcode));
+
         TypeInfo[] argTypes;
         if (insn.arguments.length == 3
                 && insn.arguments[2].type == typeid(Register)) {
@@ -139,10 +142,10 @@ class CodeGenerator {
             case OPCODES.adc: opcode = 0b0101; break;
             case OPCODES.sbc: opcode = 0b0110; break;
             case OPCODES.rsc: opcode = 0b0111; break;
-            //case OPCODES.tst: opcode = 0b1000; break;
-            //case OPCODES.teq: opcode = 0b1001; break;
-            //case OPCODES.cmp: opcode = 0b1010; break;
-            //case OPCODES.cmn: opcode = 0b1011; break;
+            case OPCODES.tst: opcode = 0b1000; break;
+            case OPCODES.teq: opcode = 0b1001; break;
+            case OPCODES.cmp: opcode = 0b1010; break;
+            case OPCODES.cmn: opcode = 0b1011; break;
             case OPCODES.orr: opcode = 0b1100; break;
             case OPCODES.bic: opcode = 0b1110; break;
             default: assert(0);
@@ -173,6 +176,30 @@ class CodeGenerator {
         return cast(ubyte[]) dataInsn[0..1];
     }
 
+    // These instructions data processing instructions but the result is not
+    // written. They simply modify to the CSPR. We do type checking and then
+    // modify the args to conform to normal data processing ins and then pass
+    // it to generateDataProcessingInstruction()
+    ubyte[] generateCompDataProcessingInstruction(Instruction insn) {
+        TypeInfo[] argTypes;
+        if (insn.arguments.length == 2
+                && insn.arguments[1].type == typeid(Register)) {
+            argTypes = [typeid(Register), typeid(Register)];
+        } else {
+            argTypes = [typeid(Register), typeid(Integer)];
+        }
+
+        if (!ensureArgumentTypes(insn, argTypes)) {
+            return [0, 0, 0, 0];
+        }
+
+        Variant regV = cast(Variant)Register(REGISTERS.r0);
+        insn.arguments = [regV] ~ insn.arguments;
+        insn.setBit = true;
+
+        return generateDataProcessingInstruction(insn);
+    }
+
     ubyte[] generateInstruction(Instruction ins) {
         switch (ins.opcode) {
             case OPCODES.b:
@@ -188,14 +215,14 @@ class CodeGenerator {
             case OPCODES.adc:
             case OPCODES.sbc:
             case OPCODES.rsc:
-            //case OPCODES.tst:
-            //case OPCODES.teq:
-            //case OPCODES.cmp:
-            //case OPCODES.cmn:
             case OPCODES.orr:
             case OPCODES.bic:
                 return generateDataProcessingInstruction(ins);
-                // return unwritten data processing insn
+            case OPCODES.tst:
+            case OPCODES.teq:
+            case OPCODES.cmp:
+            case OPCODES.cmn:
+                return generateCompDataProcessingInstruction(ins);
             default:
                 return [0, 0, 0, 0];
         }
@@ -222,6 +249,8 @@ class CodeGenerator {
                     char[] s = arg.get!String.value.dup;
                     r ~= cast(ubyte[])s;
                 } else {
+                    // TODO: Generate type error and create array of correct
+                    // number of bytes
                     assert(0);
                 }
             }

@@ -49,7 +49,7 @@ void parseFile(string filename) {
         foreach(i; 0..(compiledCode.length / 4)) {
             write("0x");
             write(format!("%04x")(i*4));
-            writeln("    0x", compiledCode[i*4..(i+1)*4].toHexString());
+            writeln("    0x", toHexString!(LetterCase.lower)(compiledCode[i*4..(i+1)*4]));
         }
     }
     catch(LexException e) {

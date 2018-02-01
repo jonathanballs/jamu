@@ -47,30 +47,6 @@ struct Directive {
 
     uint address;
     uint size;
-    //uint size() {
-        //switch(directive) {
-            //case DIRECTIVES.defw:
-                //return 4;
-            //case DIRECTIVES.defb:
-                //uint i;
-                //foreach (arg; arguments) {
-                    //if (arg.type == typeid(String)) {
-                        //i += cast(uint) arg.get!(String).value.length;
-                    //} else if (arg.type == typeid(Integer)) {
-                        //i += 4;
-                    //}
-                //}
-                //return i;
-            //case DIRECTIVES.align_:
-                //return 0;
-            //case DIRECTIVES.include:
-                //return 0;
-
-            //default:
-                //assert(0);
-        //}
-
-    //}
 
     string toString() {
         string s = ("<DIRECTIVE " ~ to!string(directive) ~ " >");
