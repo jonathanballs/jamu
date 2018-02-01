@@ -36,6 +36,21 @@ struct DataProcessingInsn {
         uint, "cond",       4));
 }
 
+struct LoadInsn {
+    mixin(bitfields!(
+        uint, "operand2",   12,
+        uint, "destReg",    4,
+        uint, "operandReg", 4,
+        bool, "loadBit",    1,
+        bool, "writeBackBit",1,
+        bool, "byteBit",    1,
+        bool, "upBit",      1,
+        bool, "preBit",     1,
+        bool, "immediate",  1,
+        byte, "opcode",     2,
+        uint, "cond",       4));
+}
+
 Token getToken(T)(T t) {
     return t.meta.tokens[0];
 }
@@ -68,7 +83,7 @@ class CodeGenerator {
     private bool ensureArgumentTypes(Instruction insn, TypeInfo[] types) {
         if (insn.arguments.length != types.length) {
             errors ~= new TypeError(getToken(insn), to!string(insn.opcode)
-                    ~ " requires " ~ to!string(insn.arguments.length) ~ " arguments");
+                    ~ " requires " ~ to!string(types.length) ~ " arguments");
             return false;
         }
         foreach(i, arg; insn.arguments) {
@@ -246,6 +261,23 @@ class CodeGenerator {
         return generateDataProcessingInstruction(insn);
     }
 
+    ubyte[] generateLoadInstruction(Instruction insn) {
+
+        if (!ensureArgumentTypes(insn,
+                    [typeid(Register), typeid(Address)])) {
+            return [0,0,0,0];
+        }
+
+        LoadInsn* loadInsn = new LoadInsn;
+        loadInsn.cond = cast(uint)insn.extension;
+        loadInsn.opcode = 0b01;
+        loadInsn.destReg = to!uint(insn.arguments[0].get!Register.register);
+        loadInsn.operandReg = to!uint(insn.arguments[1].get!Address.value);
+        loadInsn.preBit = true;
+
+        return cast(ubyte[]) loadInsn[0..1];
+    }
+
     ubyte[] generateInstruction(Instruction ins) {
         switch (ins.opcode) {
             case OPCODES.b:
@@ -274,6 +306,8 @@ class CodeGenerator {
             case OPCODES.mov:
             case OPCODES.mvn:
                 return generateMovInstruction(ins);
+            case OPCODES.ldr:
+                return generateLoadInstruction(ins);
             default:
                 return [0, 0, 0, 0];
         }
