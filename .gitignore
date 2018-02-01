@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+jamu.so
+jamu.dylib
+jamu.dll
+jamu.a
+jamu.lib
+jamu-test-*
+jamu
+*.exe
+*.o
+*.obj
+*.lst
