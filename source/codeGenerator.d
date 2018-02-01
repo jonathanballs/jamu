@@ -3,6 +3,7 @@ import std.bitmanip;
 import std.conv;
 import std.stdio;
 import std.variant;
+import std.math : abs;
 
 import ast;
 import exceptions;
@@ -121,7 +122,6 @@ class CodeGenerator {
     }
 
     ubyte[] generateDataProcessingInstruction(Instruction insn) {
-
         assert(dataProcessingOpcodes.canFind(insn.opcode));
 
         TypeInfo[] argTypes;
@@ -200,6 +200,29 @@ class CodeGenerator {
         return generateDataProcessingInstruction(insn);
     }
 
+    // The ADR pseudo instruction gets compiled down to a sub or add instruction
+    // relative to the program counter.
+    ubyte[] generateAdrInstruction(Instruction insn) {
+        assert(insn.opcode == OPCODES.adr);
+
+        if (!ensureArgumentTypes(insn, [typeid(Register), typeid(Address)]))
+            return [0, 0, 0, 0];
+
+        // Set the opcode
+        int offset = insn.arguments[1].get!Address.value - (insn.address + 8);
+        insn.opcode = (offset < 0) ? OPCODES.sub : OPCODES.add;
+
+        // Get offset from address
+        auto offsetArg = cast(Variant)Integer(abs(offset),
+                insn.arguments[1].get!Address.meta);
+
+        // Insert PC into argument list
+        Variant regV = cast(Variant)Register(REGISTERS.r15);
+        insn.arguments = [insn.arguments[0], regV, offsetArg];
+
+        return generateDataProcessingInstruction(insn);
+    }
+
     ubyte[] generateInstruction(Instruction ins) {
         switch (ins.opcode) {
             case OPCODES.b:
@@ -223,6 +246,8 @@ class CodeGenerator {
             case OPCODES.cmp:
             case OPCODES.cmn:
                 return generateCompDataProcessingInstruction(ins);
+            case OPCODES.adr:
+                return generateAdrInstruction(ins);
             default:
                 return [0, 0, 0, 0];
         }
