@@ -26,7 +26,7 @@ struct InterruptInsn {
 
 struct DataProcessingInsn {
     mixin(bitfields!(
-        uint, "operand2",   12,
+        uint, "operand2",    12,
         uint, "destReg",    4,
         uint, "operandReg", 4,
         bool, "setBit",     1,
@@ -38,7 +38,7 @@ struct DataProcessingInsn {
 
 struct LoadInsn {
     mixin(bitfields!(
-        uint, "operand2",   12,
+        uint, "offset",     12,
         uint, "destReg",    4,
         uint, "operandReg", 4,
         bool, "loadBit",    1,
@@ -112,7 +112,7 @@ class CodeGenerator {
         // Offset is the signed 2's complement 24 bit offset shifted two
         // bits left. This is added to the program counter thus it must
         // take into account the prefetch which causes the PC to be 2 words
-        // (8 bytes) ahead of 
+        // (8 bytes) ahead of
         // TODO: Ensure that offset fits in the 24 bit space
         uint targetAddress = insn.arguments[0].get!Address.value;
         int offset = (targetAddress - insn.address);
@@ -272,8 +272,13 @@ class CodeGenerator {
         loadInsn.cond = cast(uint)insn.extension;
         loadInsn.opcode = 0b01;
         loadInsn.destReg = to!uint(insn.arguments[0].get!Register.register);
-        loadInsn.operandReg = to!uint(insn.arguments[1].get!Address.value);
+
+        int offset = insn.arguments[1].get!Address.value - (insn.address + 8);
+        loadInsn.upBit = offset > 0;
+        loadInsn.offset = abs(offset);
+        loadInsn.operandReg = 0b1111;
         loadInsn.preBit = true;
+        loadInsn.loadBit = insn.opcode == OPCODES.ldr;
 
         return cast(ubyte[]) loadInsn[0..1];
     }
@@ -317,6 +322,7 @@ class CodeGenerator {
         ubyte[] r;
         if (dir.directive == DIRECTIVES.align_) {
             ensureArgumentTypes(dir, []);
+            assert(dir.size < 4);
             foreach(i; 0..dir.size) {
                 r ~= 0;
             }
