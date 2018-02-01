@@ -147,7 +147,9 @@ class CodeGenerator {
             case OPCODES.cmp: opcode = 0b1010; break;
             case OPCODES.cmn: opcode = 0b1011; break;
             case OPCODES.orr: opcode = 0b1100; break;
+            case OPCODES.mov: opcode = 0b1101; break;
             case OPCODES.bic: opcode = 0b1110; break;
+            case OPCODES.mvn: opcode = 0b1111; break;
             default: assert(0);
         }
 
@@ -200,6 +202,27 @@ class CodeGenerator {
         return generateDataProcessingInstruction(insn);
     }
 
+    ubyte[] generateMovInstruction(Instruction insn) {
+        assert(insn.opcode == OPCODES.mov
+                || insn.opcode == OPCODES.mvn);
+
+        TypeInfo[] argTypes;
+        if (insn.arguments.length == 2
+                && insn.arguments[1].type == typeid(Register)) {
+            argTypes = [typeid(Register), typeid(Register)];
+        } else {
+            argTypes = [typeid(Register), typeid(Integer)];
+        }
+
+        if (!ensureArgumentTypes(insn, argTypes)) {
+            return [0, 0, 0, 0];
+        }
+
+        Variant regV = cast(Variant)Register(REGISTERS.r0);
+        insn.arguments = [insn.arguments[0], regV, insn.arguments[1]];
+        return generateDataProcessingInstruction(insn);
+    }
+
     // The ADR pseudo instruction gets compiled down to a sub or add instruction
     // relative to the program counter.
     ubyte[] generateAdrInstruction(Instruction insn) {
@@ -248,6 +271,9 @@ class CodeGenerator {
                 return generateCompDataProcessingInstruction(ins);
             case OPCODES.adr:
                 return generateAdrInstruction(ins);
+            case OPCODES.mov:
+            case OPCODES.mvn:
+                return generateMovInstruction(ins);
             default:
                 return [0, 0, 0, 0];
         }
