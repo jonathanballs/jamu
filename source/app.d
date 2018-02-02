@@ -2,9 +2,13 @@ import std.stdio;
 import std.getopt;
 
 import machine;
+import elfParser;
 
-void main()
+void main(string[] args)
 {
-    auto m =  new Machine(0x10000);
+    auto filename = args.length == 2 ? args[1] : "a.out";
+    MachineConfig config;
+
+    auto machine = ElfParser.parseElf(filename, config);
 }
 

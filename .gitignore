@@ -13,3 +13,7 @@ jamu
 *.o
 *.obj
 *.lst
+
+# The 
+a.out
+
