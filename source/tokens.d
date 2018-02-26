@@ -30,3 +30,5 @@ struct Cpsr {
         MODES,"mode",       5));
 }
 
+static assert(Cpsr.sizeof == 4);
+
