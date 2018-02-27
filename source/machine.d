@@ -33,6 +33,9 @@ class Machine {
         return registers[regNum];
     }
 
+    Cpsr getCpsr() { return cpsr; }
+    void setCpsr(Cpsr _cpsr) { cpsr = _cpsr; }
+
     ubyte[] getMemory(uint start, uint length) {
         return memory[start .. start + length];
     }

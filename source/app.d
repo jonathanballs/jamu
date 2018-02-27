@@ -18,6 +18,8 @@ void main(string[] args)
 }
 
 void runLoop(Machine machine) {
+    printMachineStatus(&machine);
+
     string prompt = ">>> ";
 
     while (true) {
@@ -62,8 +64,7 @@ void runLoop(Machine machine) {
 
                 import std.digest.digest;
                 foreach(i; 0..(mem.length / 4)) {
-                    write("0x");
-                    write(format!("%04x")(i*4));
+                    write("0x", format!("%04x")(i*4));
                     writeln("  0x", toHexString!(LetterCase.lower)(mem[i*4..(i+1)*4]));
                 }
 
@@ -84,7 +85,11 @@ void runLoop(Machine machine) {
 }
 
 void printMachineStatus(Machine* machine) {
-    auto insn = Instruction.parse(machine.pc() - 8, machine.getMemory(machine.pc()-8, 4));
+    auto insnLocation = machine.pc() - 8;
+    auto insn = Instruction.parse(insnLocation,
+            machine.getMemory(insnLocation, 4));
+
+    write("0x", format!("%04x\t")(insnLocation));
     writeln(insn);
 }
 
