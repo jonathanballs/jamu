@@ -23,6 +23,16 @@ class Machine {
         }
     }
 
+    void setRegister(uint regNum, uint value) {
+        assert(regNum >= 0 && regNum <= 15);
+        registers[regNum] = value;
+    }
+
+    uint getRegister(uint regNum) {
+        assert(regNum >= 0 && regNum <= 15);
+        return registers[regNum];
+    }
+
     ubyte[] getMemory(uint start, uint length) {
         return memory[start .. start + length];
     }
