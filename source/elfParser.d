@@ -82,7 +82,7 @@ class ElfParser {
 
         auto elfHeader = cast(ElfHeader *) fileBytes.ptr;
         auto pHeader = cast(ProgramHeader *) (fileBytes.ptr + ElfHeader.sizeof);
-        auto segmentBytes = fileBytes[pHeader.p_offset .. $-1];
+        auto segmentBytes = fileBytes[pHeader.p_offset .. $];
 
         auto machine = new Machine(config);
         machine.setMemory(pHeader.p_vaddr, segmentBytes);

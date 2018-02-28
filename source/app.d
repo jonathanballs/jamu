@@ -35,6 +35,8 @@ void runLoop(Machine machine) {
             cmd = ["next"];
         }
 
+        // These commands are just for development for now. Time will be spent
+        // trying to make them more intuitive
         switch(cmd[0]) {
             case "exit":
             case "quit":
@@ -109,6 +111,7 @@ void runLoop(Machine machine) {
 }
 
 void printMachineStatus(Machine* machine) {
+    writeln("next instruction: ");
     auto insnLocation = machine.pc() - 8;
     auto insn = Instruction.parse(insnLocation,
             machine.getMemory(insnLocation, 4));

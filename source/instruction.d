@@ -1,6 +1,7 @@
 import std.conv;
 import std.bitmanip;
 import std.format;
+import std.stdio;
 
 import tokens;
 import machine;
@@ -49,6 +50,11 @@ class Instruction {
         }
     }
 
+    string registerString(uint regNum) {
+        assert(regNum <= 15);
+        return "R" ~ to!string(regNum);
+    }
+
     string conditionString(uint cond) {
         switch (cond) {
             case 0b0000: return "EQ";
@@ -80,10 +86,15 @@ class Instruction {
         auto faBytes = * cast(ubyte[4]*) bytes.ptr;
 
         // First we must detect what kind of instruction it is
+        writeln(faBytes);
+        writeln("opcode: ", (cast(Insn *) faBytes.ptr).cond);
+        writeln("source: ", faBytes);
+
         switch ((cast(Insn *) faBytes.ptr).opcode) {
             case 0b101:
                 return new BranchInstruction(location, faBytes);
             case 0b001:
+            case 0b000:
                 return new DataProcessingInstruction(location, faBytes);
             default:
                 return new Instruction(location, faBytes);
@@ -116,9 +127,12 @@ class BranchInstruction : Instruction {
     }
 
     override Machine* execute(Machine *m) {
-        import std.stdio;
-        m.setRegister(15, m.pc() + (castedBytes.offset << 2) + 8);
-        return m;
+        if (conditionIsTrue(m)) {
+            m.setRegister(15, m.pc() + (castedBytes.offset << 2) + 8);
+            return m;
+        } else {
+            return super.execute(m);
+        }
     }
 
     override string toString() {
@@ -131,6 +145,57 @@ class BranchInstruction : Instruction {
 }
 
 class DataProcessingInstruction : Instruction {
+
+    override Machine* execute(Machine *m) {
+
+        if (!conditionIsTrue(m)) {
+            writeln("Condition is false.. skipping");
+            return super.execute(m);
+        }
+
+        auto op2Val = castedBytes.immediate
+            ? castedBytes.operand2
+            : m.getRegister(castedBytes.operand2);
+        auto op1Val = m.getRegister(castedBytes.operandReg);
+
+        auto cpsr = m.getCpsr();
+
+        uint result;
+        switch(instructionString()) {
+            case "AND": result = op1Val & op2Val; break;
+            case "EOR": result = op1Val ^ op2Val; break;
+            case "SUB": result = op1Val - op2Val; break;
+            case "RSB": result = op2Val - op1Val; break;
+            case "ADD": result = op1Val + op2Val; break;
+            case "ADC": result = op1Val + op2Val + cpsr.carry; break;
+            case "SBC": result = op1Val - op2Val - 1 + cpsr.carry; break;
+            case "RSC": result = op2Val - op1Val - 1 + cpsr.carry; break;
+            case "TST": result = op1Val & op2Val; break;
+            case "TEQ": goto case "EOR";
+            case "CMP": goto case "SUB";
+            case "CMN": goto case "ADD";
+            case "ORR": result = op1Val | op2Val; break;
+            case "MOV": result = op2Val; break;
+            case "BIC": result = op1Val & ~op2Val; break;
+            case "MVN": result = 0xFFFFFFFF ^ op2Val; break;
+            default:
+                import std.stdio;
+                writeln("ERR: NOT IMPLEMENTED");
+                break;
+        }
+
+        if (isWriteInstruction()) {
+            m.setRegister(castedBytes.destReg, result);
+        }
+
+        if (isSaveInstruction()) {
+            cpsr.zero = result == 0;
+            m.setCpsr(cpsr);
+        }
+
+        return super.execute(m);
+    }
+
     struct DataProcessingInsn {
         mixin(bitfields!(
             uint, "operand2",    12,
@@ -165,6 +230,31 @@ class DataProcessingInstruction : Instruction {
         }
     }
 
+    bool isWriteInstruction() {
+        switch (instructionString()) {
+            case "TST":
+            case "TEQ":
+            case "CMP":
+            case "CMN":
+                return false;
+            default:
+                return true;
+        }
+    }
+
+
+    bool isSaveInstruction() {
+        switch (instructionString()) {
+            case "TST":
+            case "TEQ":
+            case "CMP":
+            case "CMN":
+                return true;
+            default:
+                return castedBytes.setBit;
+        }
+    }
+
     DataProcessingInsn* castedBytes() {
         return cast(DataProcessingInsn *) source.ptr;
     }
@@ -174,7 +264,16 @@ class DataProcessingInstruction : Instruction {
     }
 
     override string toString() {
-        return instructionString() ~ conditionString(castedBytes().cond);
+        auto ins = instructionString() ~ conditionString(castedBytes.cond)
+            ~ " " ~ registerString(castedBytes.destReg) // Destination reg
+            ~ ", " ~ registerString(castedBytes.operandReg);
+        if (castedBytes.immediate) {
+            ins ~= ", #" ~ to!string(castedBytes.operand2);
+        } else {
+            ins ~= ", " ~ registerString(castedBytes.operand2);
+        }
+
+        return ins;
     }
 }
 
