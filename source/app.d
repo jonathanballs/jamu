@@ -44,12 +44,36 @@ void runLoop(Machine machine) {
                 writeln("Memory size:        ", machine.config.memorySize);
                 writeln("Program counter:    ", machine.pc());
                 continue;
+
+            case "pc":
+                cmd = ["reg", "15"];
+            goto case;
+
             case "reg":
             case "registers":
-                for (int i=0; i<16; i++) {
-                    write(format!"%08x%s"(machine.getRegister(i), (i + 1)%8 ? "  " : "\n"));
+                if (cmd.length == 1) {
+                    for (int i=0; i<16; i++) {
+                        write(format!"%08x%s"(machine.getRegister(i), (i + 1)%8 ? "  " : "\n"));
+                    }
+                } else {
+                    try {
+                        auto regNum = to!uint(cmd[1]);
+                        writeln(format!"%08x"(machine.getRegister(regNum)));
+                    } catch (Exception e) {
+                        writeln("Unknown register number");
+                    }
                 }
                 continue;
+
+
+            case "cpsr":
+                auto cpsr = machine.getCpsr();
+                writeln("neg: ", cpsr.negative, ", zero: ", cpsr.zero,
+                        ", carry: ", cpsr.carry, ", overflow: ", cpsr.overflow);
+                writeln("dIRQ: ", cpsr.disableIRQ, ", dFIQ: ", cpsr.disableFIQ,
+                        ", state: ", cpsr.state, ", mode: ", cpsr.mode);
+                continue;
+
             case "mem":
             case "memory":
                 if (cmd.length == 1) {
