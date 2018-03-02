@@ -30,13 +30,5 @@ struct Action {
         originalValue = (cast(ubyte*)&_originalValue)[0..4].dup;
         newValue = (cast(ubyte*)&_newValue)[0..4].dup;
     }
-
-    Machine apply(Machine m) {
-        return m;
-    }
-
-    Machine unApply(Machine m) {
-        return m;
-    }
 }
 

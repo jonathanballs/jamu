@@ -2,42 +2,100 @@ import std.conv;
 import std.getopt;
 import std.stdio;
 import std.string;
+import std.json;
 
 import machine;
 import instruction;
 import elfParser;
 
-void main(string[] args)
-{
-    auto filename = args.length == 2 ? args[1] : "a.out";
-    MachineConfig config;
-
-    auto machine = ElfParser.parseElf(filename, config);
-
-    runLoop(machine);
+struct EmulatorConfig {
+    bool jsonInterface;
+    string filename;
 }
 
-void runLoop(Machine machine) {
-    printMachineStatus(&machine);
+struct EmulatorCommand {
+    string cmd;
+    string[] args;
+}
 
-    string prompt = ">>> ";
+void main(string[] args)
+{
+    EmulatorConfig emuConf;
+    MachineConfig machineConf;
+
+    auto helpInfo = getopt(
+            args,
+            "json", &emuConf.jsonInterface,
+            "file", &emuConf.filename);
+
+    Machine machine = emuConf.filename
+        ? ElfParser.parseElf(emuConf.filename, machineConf)
+        : new Machine(machineConf);
+
+    runLoop(machine, emuConf);
+}
+
+// Parse a command agnostically to input syntax.
+// load_elf a.out
+// { "cmd": "load_elf", "args": ["a.out"] }
+EmulatorCommand parseCommand(string command, bool json) {
+    EmulatorCommand parsedCommand;
+    if (json) {
+        auto j = parseJSON(command);
+        parsedCommand.cmd = j["cmd"].str;
+        foreach(JSONValue a; j["args"].array) {
+            parsedCommand.args ~= a.str;
+        }
+    } else {
+        auto l = command.chomp().split(" ");
+        if (!l.length) { // Return an empty command.
+            parsedCommand.cmd = "repeat";
+        } else {
+            parsedCommand.cmd = l[0];
+            parsedCommand.args = l[1..$];
+        }
+    }
+
+    return parsedCommand;
+}
+
+void runLoop(Machine machine, EmulatorConfig emuConf) {
+
+    printMachineStatus(&machine);
+    EmulatorCommand previousCommand = EmulatorCommand("step");
 
     while (true) {
-        // Write the prompt
-        import colorize : fg, color, cwrite;
-        cwrite(prompt.color(fg.green));
 
-        auto l = readln().chomp();
+        // Display user prompt if not json interface
+        if (!emuConf.jsonInterface) {
+            import colorize : fg, color, cwrite;
+            cwrite(">>> ".color(fg.green));
+        }
 
-        auto cmd = l.split(" ");
+        EmulatorCommand command;
+        try {
+            command = parseCommand(readln(), emuConf.jsonInterface);
+        } catch (Exception e) {
+            if (emuConf.jsonInterface) {
+                JSONValue j = ["error": "Unable to parse json command"];
+                writeln(j.toString);
+            } else {
+                writeln("Error: Unable to understand command");
+            }
+        }
 
-        if (cmd.length == 0) {
-            cmd = ["next"];
+        // The repeat command will repeat the last command. If it's the first
+        // command then it will default to step (see instantiation of
+        // previosuCommand).
+        if (command.cmd == "repeat") {
+            command = previousCommand;
+        } else {
+            previousCommand = command;
         }
 
         // These commands are just for development for now. Time will be spent
         // trying to make them more intuitive
-        switch(cmd[0]) {
+        switch(command.cmd) {
             case "exit":
             case "quit":
                 return;
@@ -48,18 +106,19 @@ void runLoop(Machine machine) {
                 continue;
 
             case "pc":
-                cmd = ["reg", "15"];
-            goto case;
+                command.cmd = "reg";
+                command.args = ["15"];
+                goto case;
 
             case "reg":
             case "registers":
-                if (cmd.length == 1) {
+                if (!command.args.length) {
                     for (int i=0; i<16; i++) {
                         write(format!"%08x%s"(machine.getRegister(i), (i + 1)%8 ? "  " : "\n"));
                     }
                 } else {
                     try {
-                        auto regNum = to!uint(cmd[1]);
+                        auto regNum = to!uint(command.args[0]);
                         writeln(format!"%08x"(machine.getRegister(regNum)));
                     } catch (Exception e) {
                         writeln("Unknown register number");
@@ -78,14 +137,17 @@ void runLoop(Machine machine) {
 
             case "mem":
             case "memory":
-                if (cmd.length == 1) {
+                if (!command.args.length) {
                     writeln("usage: mem start_loc, length");
                     continue;
                 }
 
-                uint startLoc = to!uint(cmd[1]) & 0xfffffff3;
+                uint startLoc = to!uint(command.args[0]) & 0xfffffff3;
 
-                uint memLength = cmd.length > 2 ? to!int(cmd[2]) : 64;
+                uint memLength = command.args.length > 2
+                    ? to!int(command.args[1])
+                    : 64;
+
                 ubyte[] mem = machine.getMemory(startLoc, memLength);
 
                 import std.digest.digest;
