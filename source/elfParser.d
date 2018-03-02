@@ -75,7 +75,6 @@ class ElfParser {
 
         // Right just have support for reading a single program header and
         // a single segment
-
         if (fileBytes.length < ElfHeader.sizeof + ProgramHeader.sizeof) {
             throw new Exception(filename ~ " is too small to be a valid elf file.");
         }

@@ -9,9 +9,7 @@ enum ACTIONTYPES {
 
 // Represents the changes of a single instruction
 struct Step {
-    uint instructionAddress;
-
-    private Action[] actions;
+    Action[] actions;
 
     Machine apply(Machine m) { return m; }
     Machine unApply(Machine m) { return m; }
@@ -21,8 +19,17 @@ struct Action {
     // Details r.e. the modification
 
     ACTIONTYPES type;
-    uint resourceID;
+    uint resourceID; // Register number or mem location etc.
     ubyte[] originalValue;
+    ubyte[] newValue;
+
+    this(ACTIONTYPES _type, uint _resourceID,
+            uint _originalValue, uint _newValue) {
+        type = _type;
+        resourceID = _resourceID;
+        originalValue = (cast(ubyte*)&_originalValue)[0..4].dup;
+        newValue = (cast(ubyte*)&_newValue)[0..4].dup;
+    }
 
     Machine apply(Machine m) {
         return m;

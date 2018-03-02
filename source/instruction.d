@@ -85,11 +85,6 @@ class Instruction {
         assert(source.length == 4);
         auto faBytes = * cast(ubyte[4]*) bytes.ptr;
 
-        // First we must detect what kind of instruction it is
-        writeln(faBytes);
-        writeln("opcode: ", (cast(Insn *) faBytes.ptr).cond);
-        writeln("source: ", faBytes);
-
         switch ((cast(Insn *) faBytes.ptr).opcode) {
             case 0b101:
                 return new BranchInstruction(location, faBytes);

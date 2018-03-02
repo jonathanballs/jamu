@@ -95,6 +95,12 @@ void runLoop(Machine machine) {
                 }
 
                 continue;
+            
+            case "back":
+            case "prev":
+                machine.stepBack();
+                printMachineStatus(&machine);
+                continue;
 
             case "step":
             case "next":
@@ -111,12 +117,11 @@ void runLoop(Machine machine) {
 }
 
 void printMachineStatus(Machine* machine) {
-    writeln("next instruction: ");
     auto insnLocation = machine.pc() - 8;
     auto insn = Instruction.parse(insnLocation,
             machine.getMemory(insnLocation, 4));
 
-    write("0x", format!("%04x\t")(insnLocation));
-    writeln(insn);
+    writeln("0x", format!("%04x\t")(insnLocation), insn);
+    writeln("Current machine hash: ", machine.toHash());
 }
 
