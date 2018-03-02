@@ -1,5 +1,7 @@
 import tokens;
 import history;
+import instruction;
+import std.digest.md;
 
 struct MachineConfig {
     uint memorySize = 0x10000;      // 64kb
@@ -41,6 +43,16 @@ class Machine {
     }
 
     uint pc() { return registers[$-1]; }
+
+    override ulong toHash() @trusted {
+        auto md5 = new MD5Digest();
+        md5.put(cast(ubyte[]) registers);
+        md5.put(memory);
+        md5.put(*cast(ubyte[4]*)&cpsr);
+
+        ubyte[16] hash = md5.finish();
+        return *cast(ulong*)&hash[0];
+    }
 
     this(MachineConfig config) {
         memory.length = config.memorySize;
