@@ -1,4 +1,6 @@
 import std.bitmanip;
+import std.json;
+import std.conv;
 
 enum REGISTERS {
     r0, r1, r2, r3,
@@ -28,6 +30,23 @@ struct Cpsr {
         bool, "disableFIQ", 1,
         bool, "state",      1,
         MODES,"mode",       5));
+
+
+    JSONValue toJSON() {
+        JSONValue j = [
+            "negative":     this.negative,
+            "zero":         this.zero,
+            "carry":        this.carry,
+            "overflow":     this.overflow,
+            "disableIRQ":   this.disableIRQ,
+            "disableFIQ":   this.disableFIQ,
+            "state":        this.state,
+        ];
+
+        j["mode"] = this.mode;
+
+        return j;
+    }
 }
 
 static assert(Cpsr.sizeof == 4);

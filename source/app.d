@@ -32,6 +32,11 @@ void main(string[] args)
         ? ElfParser.parseElf(emuConf.filename, machineConf)
         : new Machine(machineConf);
 
+    // Set output to line buffering for json output
+    if (emuConf.jsonInterface) {
+        stdout.setvbuf(0, 2);
+    }
+
     runLoop(machine, emuConf);
 }
 
@@ -59,9 +64,22 @@ EmulatorCommand parseCommand(string command, bool json) {
     return parsedCommand;
 }
 
+void writeError(string errorMessage, bool json) {
+    if (json) {
+        JSONValue j = ["error": errorMessage];
+        writeln(j);
+    } else {
+        import colorize : fg, color, cwrite;
+        cwrite("Error: ".color(fg.red));
+        writeln(errorMessage);
+    }
+}
+
 void runLoop(Machine machine, EmulatorConfig emuConf) {
 
-    printMachineStatus(&machine);
+    if (!emuConf.jsonInterface)
+        printMachineStatus(&machine, emuConf);
+
     EmulatorCommand previousCommand = EmulatorCommand("step");
 
     while (true) {
@@ -76,12 +94,9 @@ void runLoop(Machine machine, EmulatorConfig emuConf) {
         try {
             command = parseCommand(readln(), emuConf.jsonInterface);
         } catch (Exception e) {
-            if (emuConf.jsonInterface) {
-                JSONValue j = ["error": "Unable to parse json command"];
-                writeln(j.toString);
-            } else {
-                writeln("Error: Unable to understand command");
-            }
+            writeError("Unable to understand command passed to jamu.",
+                    emuConf.jsonInterface);
+            continue;
         }
 
         // The repeat command will repeat the last command. If it's the first
@@ -100,60 +115,60 @@ void runLoop(Machine machine, EmulatorConfig emuConf) {
             case "quit":
                 return;
             case "info":
-                writeln("Machine info");
-                writeln("Memory size:        ", machine.config.memorySize);
-                writeln("Program counter:    ", machine.pc());
-                continue;
+                JSONValue j = [
+                    "mem_size": machine.config.memorySize,
+                    "pc": machine.pc(),
+                    "machine_hash": machine.toHash()
+                ];
+                writeln(j);
 
-            case "pc":
-                command.cmd = "reg";
-                command.args = ["15"];
-                goto case;
+                continue;
 
             case "reg":
             case "registers":
-                if (!command.args.length) {
-                    for (int i=0; i<16; i++) {
-                        write(format!"%08x%s"(machine.getRegister(i), (i + 1)%8 ? "  " : "\n"));
-                    }
-                } else {
-                    try {
-                        auto regNum = to!uint(command.args[0]);
-                        writeln(format!"%08x"(machine.getRegister(regNum)));
-                    } catch (Exception e) {
-                        writeln("Unknown register number");
-                    }
-                }
+                JSONValue j = [ "register_values": machine.getRegisters() ];
+                writeln(j);
                 continue;
 
-
             case "cpsr":
-                auto cpsr = machine.getCpsr();
-                writeln("neg: ", cpsr.negative, ", zero: ", cpsr.zero,
-                        ", carry: ", cpsr.carry, ", overflow: ", cpsr.overflow);
-                writeln("dIRQ: ", cpsr.disableIRQ, ", dFIQ: ", cpsr.disableFIQ,
-                        ", state: ", cpsr.state, ", mode: ", cpsr.mode);
+                JSONValue j = machine.getCpsr().toJSON();
+                writeln(j);
                 continue;
 
             case "mem":
             case "memory":
                 if (!command.args.length) {
-                    writeln("usage: mem start_loc, length");
+                    writeError("usage: mem start_loc, length", emuConf.jsonInterface);
                     continue;
                 }
 
-                uint startLoc = to!uint(command.args[0]) & 0xfffffff3;
-
+                uint startLoc = to!uint(command.args[0]) & 0xfffffffc;
+                if (startLoc > machine.config.memorySize - 4) {
+                    startLoc = machine.config.memorySize - 4;
+                }
                 uint memLength = command.args.length > 2
                     ? to!int(command.args[1])
                     : 64;
 
+                if (startLoc + memLength >= machine.config.memorySize) {
+                    memLength = machine.config.memorySize - startLoc;
+                }
+
                 ubyte[] mem = machine.getMemory(startLoc, memLength);
 
-                import std.digest.digest;
-                foreach(i; 0..(mem.length / 4)) {
-                    write("0x", format!("%04x")(i*4));
-                    writeln("  0x", toHexString!(LetterCase.lower)(mem[i*4..(i+1)*4]));
+                if (emuConf.jsonInterface) {
+                    JSONValue j = [
+                        "start_address": startLoc,
+                        "block_length": memLength
+                    ];
+                    j["memory"] = mem;
+                    writeln(j);
+                } else {
+                    import std.digest.digest;
+                    foreach(i; 0..(mem.length / 4)) {
+                        write("0x", format!("%04x")(startLoc + i*4));
+                        writeln("  0x", toHexString!(LetterCase.lower)(mem[i*4..(i+1)*4]));
+                    }
                 }
 
                 continue;
@@ -161,7 +176,7 @@ void runLoop(Machine machine, EmulatorConfig emuConf) {
             case "back":
             case "prev":
                 machine.stepBack();
-                printMachineStatus(&machine);
+                printMachineStatus(&machine, emuConf);
                 continue;
 
             case "step":
@@ -170,20 +185,22 @@ void runLoop(Machine machine, EmulatorConfig emuConf) {
                 auto insn = Instruction.parse(insnLocation,
                         machine.getMemory(insnLocation, 4));
                 insn.execute(&machine);
-                printMachineStatus(&machine);
+                printMachineStatus(&machine, emuConf);
                 continue;
             default:
-                writeln("Couldn't understand command");
+                writeln("Couldn't understand command: ", command.cmd);
         }
     }
 }
 
-void printMachineStatus(Machine* machine) {
+void printMachineStatus(Machine* machine, EmulatorConfig emuConf) {
     auto insnLocation = machine.pc() - 8;
     auto insn = Instruction.parse(insnLocation,
             machine.getMemory(insnLocation, 4));
 
-    writeln("0x", format!("%04x\t")(insnLocation), insn);
-    writeln("Current machine hash: ", machine.toHash());
+    if (!emuConf.jsonInterface) {
+        writeln("0x", format!("%04x\t")(insnLocation), insn);
+        writeln("Current machine hash: ", machine.toHash());
+    }
 }
 

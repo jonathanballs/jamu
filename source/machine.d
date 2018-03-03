@@ -76,6 +76,10 @@ class Machine {
         return registers[regNum];
     }
 
+    uint[] getRegisters() {
+        return registers;
+    }
+
     Cpsr getCpsr() { return cpsr; }
     void setCpsr(Cpsr _cpsr) {
         currentStep ~= Action(ACTIONTYPES.CPSRMod,

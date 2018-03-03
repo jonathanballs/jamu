@@ -144,7 +144,6 @@ class DataProcessingInstruction : Instruction {
     override Machine* execute(Machine *m) {
 
         if (!conditionIsTrue(m)) {
-            writeln("Condition is false.. skipping");
             return super.execute(m);
         }
 
