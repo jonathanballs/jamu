@@ -49,7 +49,11 @@ EmulatorCommand parseCommand(string command, bool json) {
         auto j = parseJSON(command);
         parsedCommand.cmd = j["cmd"].str;
         foreach(JSONValue a; j["args"].array) {
-            parsedCommand.args ~= a.str;
+            if (a.type() == JSON_TYPE.STRING) {
+                parsedCommand.args ~= a.str;
+            } else {
+                parsedCommand.args ~= to!string(a.integer);
+            }
         }
     } else {
         auto l = command.chomp().split(" ");
