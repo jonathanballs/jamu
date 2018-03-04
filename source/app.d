@@ -184,6 +184,8 @@ void runLoop(Machine machine, EmulatorConfig emuConf) {
             case "prev":
                 machine.stepBack();
                 printMachineStatus(&machine, emuConf);
+                JSONValue j = ["result": "done"];
+                writeln(j);
                 continue;
 
             case "step":
@@ -193,6 +195,8 @@ void runLoop(Machine machine, EmulatorConfig emuConf) {
                         machine.getMemory(insnLocation, 4));
                 insn.execute(&machine);
                 printMachineStatus(&machine, emuConf);
+                JSONValue j = ["result": "done"];
+                writeln(j);
                 continue;
             default:
                 writeln("Couldn't understand command: ", command.cmd);
