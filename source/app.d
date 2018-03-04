@@ -48,11 +48,14 @@ EmulatorCommand parseCommand(string command, bool json) {
     if (json) {
         auto j = parseJSON(command);
         parsedCommand.cmd = j["cmd"].str;
-        foreach(JSONValue a; j["args"].array) {
-            if (a.type() == JSON_TYPE.STRING) {
-                parsedCommand.args ~= a.str;
-            } else {
-                parsedCommand.args ~= to!string(a.integer);
+
+        if (const(JSONValue)* args = "args" in j) {
+            foreach(JSONValue a; j["args"].array) {
+                if (a.type() == JSON_TYPE.STRING) {
+                    parsedCommand.args ~= a.str;
+                } else {
+                    parsedCommand.args ~= to!string(a.integer);
+                }
             }
         }
     } else {
@@ -176,7 +179,7 @@ void runLoop(Machine machine, EmulatorConfig emuConf) {
                 }
 
                 continue;
-            
+
             case "back":
             case "prev":
                 machine.stepBack();
