@@ -182,7 +182,7 @@ class DataProcessingInstruction : Instruction {
             m.setRegister(castedBytes.destReg, result);
         }
 
-        if (isSaveInstruction()) {
+        if (modifiesCPSR()) {
             cpsr.zero = result == 0;
             m.setCpsr(cpsr);
         }
@@ -237,7 +237,8 @@ class DataProcessingInstruction : Instruction {
     }
 
 
-    bool isSaveInstruction() {
+    // Does it modify CSPR
+    bool modifiesCPSR() {
         switch (instructionString()) {
             case "TST":
             case "TEQ":
@@ -246,6 +247,27 @@ class DataProcessingInstruction : Instruction {
                 return true;
             default:
                 return castedBytes.setBit;
+        }
+    }
+
+    bool usesBaseRegister() {
+        switch (instructionString()) {
+            case "MOV":
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    bool usesDestReg() {
+        switch (instructionString()) {
+            case "TST":
+            case "TEQ":
+            case "CMP":
+            case "CMN":
+                return false;
+            default:
+                return true;
         }
     }
 
@@ -258,13 +280,21 @@ class DataProcessingInstruction : Instruction {
     }
 
     override string toString() {
-        auto ins = instructionString() ~ conditionString(castedBytes.cond)
-            ~ " " ~ registerString(castedBytes.destReg) // Destination reg
-            ~ ", " ~ registerString(castedBytes.operandReg);
+        auto ins = instructionString() ~ conditionString(castedBytes.cond);
+        if (usesBaseRegister()) {
+            ins ~= " " ~ registerString(castedBytes.destReg); // Destination reg
+        }
+        if (usesDestReg()) {
+            if (usesBaseRegister())
+                ins ~= ",";
+
+            ins ~= " " ~ registerString(castedBytes.operandReg);
+        }
+
         if (castedBytes.immediate) {
             ins ~= ", #" ~ to!string(castedBytes.operand2);
         } else {
-            ins ~= ", " ~ registerString(castedBytes.operand2);
+            ins ~= ", " ~ registerString(castedBytes.operand2 & 0xf);
         }
 
         return ins;

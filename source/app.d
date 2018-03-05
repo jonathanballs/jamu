@@ -3,6 +3,7 @@ import std.getopt;
 import std.stdio;
 import std.string;
 import std.json;
+import std.algorithm.mutation: reverse;
 
 import machine;
 import instruction;
@@ -197,6 +198,35 @@ void runLoop(Machine machine, EmulatorConfig emuConf) {
                 printMachineStatus(&machine, emuConf);
                 JSONValue j = ["result": "done"];
                 writeln(j);
+                continue;
+
+            case "decode":
+                if (command.args.length != 2) {
+                    writeError("Please supply the instruction (as hex) " ~
+                            "and location", emuConf.jsonInterface);
+                    continue;
+                }
+
+                if (command.args[1].length != 8) {
+                    writeError("Instruction should be 4 bytes hexadecimal",
+                            emuConf.jsonInterface);
+                    continue;
+                }
+
+                uint location = command.args[0].to!uint;
+                uint insnBytes = command.args[1].to!uint(16);
+                ubyte[] UbInsnBytes = (*cast(ubyte[4]*)&insnBytes);
+                UbInsnBytes = UbInsnBytes.reverse; // Little endian :)
+
+                try {
+                    auto decoded = Instruction.parse(location, UbInsnBytes).toString();
+                    JSONValue j = ["instruction": command.args[1], "disasm": decoded];
+                    writeln(j);
+                } catch (Exception e) {
+                    JSONValue j = ["instruction": command.args[1], "disasm": "unknown"];
+                    writeln(j);
+                }
+
                 continue;
             default:
                 writeln("Couldn't understand command: ", command.cmd);
