@@ -10,6 +10,7 @@ import subprocess
 from elftools.elf.elffile import ELFFile
 from keystone import *
 
+NUM_INS_PER_TEST = 100
 TEST_DIR = 'test/tmp'
 CONDITIONS = [
         'eq', 'ne', 'cs', 'cc',
@@ -73,34 +74,30 @@ def test_code(test_name, source):
 #
 #
 source = ""
-for i in range(0, 80, 4):
-    ins = "B " + str(i) + '\n'
-    source += ins
+for i in range(NUM_INS_PER_TEST):
+    source += "B {}\n".format(i<<2)
 test_code("Basic branching", source)
 source = ""
-for i in range(0, 80, 4):
-    ins = "B" + CONDITIONS[int((i/4) % len(CONDITIONS))] + ' ' + str(i) + '\n'
-    source += ins
+for i in range(NUM_INS_PER_TEST):
+    source += "B{} {}\n".format(CONDITIONS[i% 16], i<<2);
 test_code("Conditional branching", source)
 
 source = ""
-for i in range(0, 80, 4):
-    ins = "BL " + str(i) + '\n'
-    source += ins
+for i in range(NUM_INS_PER_TEST):
+    source += "BL {}\n".format(i<<2)
 test_code("Basic branching and linking", source)
 source = ""
-for i in range(0, 80, 4):
-    ins = "BL" + CONDITIONS[int((i/4) % len(CONDITIONS))] + ' ' + str(i) + '\n'
-    source += ins
+for i in range(NUM_INS_PER_TEST):
+    source += "BL{} {}\n".format(CONDITIONS[i%16], i<<2)
 test_code("Conditional branching and linking", source)
 
 source = ""
-for i in range(0, 80, 4):
-    ins = "BX R" + str(i%16) + '\n'
+for i in range(NUM_INS_PER_TEST):
+    ins = "BX R{}\n".format(i%16)
     source += ins
 test_code("Basic branch and exchanging", source)
-for i in range(0, 80, 4):
-    ins = "BX" + CONDITIONS[int((i/4) % len(CONDITIONS))] + ' R' + str((i//4) % 16) + '\n'
+for i in range(NUM_INS_PER_TEST):
+    ins = "BX{} R{}\n".format(CONDITIONS[i%16], str(i%16))
     source += ins
 test_code("Conditional branch and exchanging", source)
 
