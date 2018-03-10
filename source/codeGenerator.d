@@ -71,12 +71,20 @@ class CodeGenerator {
             return false;
         }
         foreach(i, arg; dir.arguments) {
+            if (arg.type == typeid(Address) && types[i] == typeid(Integer)) {
+                dir.arguments[i] = Integer(arg.get!Address.value, arg.get!Address.meta);
+                arg = dir.arguments[i];
+            } else if (arg.type == typeid(Integer) && types[i] == typeid(Address)) {
+                dir.arguments[i] = Address(arg.get!Integer.value, arg.get!Integer.meta);
+                arg = dir.arguments[i];
+            }
             if (arg.type != types[i]) {
                 errors ~= new TypeError(getToken(dir), "Expected " ~ to!string(types[i])
                         ~ " but got " ~ to!string(arg.type));
                 return false;
             }
         }
+
         return true;
     }
 
@@ -87,12 +95,22 @@ class CodeGenerator {
             return false;
         }
         foreach(i, arg; insn.arguments) {
+            // Convert between address and integers
+            if (arg.type == typeid(Address) && types[i] == typeid(Integer)) {
+                insn.arguments[i] = Integer(arg.get!Address.value, arg.get!Address.meta);
+                arg = insn.arguments[i];
+            } else if (arg.type == typeid(Integer) && types[i] == typeid(Address)) {
+                insn.arguments[i] = Address(arg.get!Integer.value, arg.get!Integer.meta);
+                arg = insn.arguments[i];
+            }
+
             if (arg.type != types[i]) {
                 errors ~= new TypeError(getToken(insn), "Expected " ~ to!string(types[i])
                         ~ " but got " ~ to!string(arg.type));
                 return false;
             }
         }
+        types = [];
         return true;
     }
 
