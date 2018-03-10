@@ -17,6 +17,13 @@ struct BranchInsn {
         uint, "cond",       4));
 }
 
+struct BranchExchangeInsn {
+    mixin(bitfields!(
+        uint,  "operandReg", 4,
+        uint, "opcode",     24,
+        uint, "cond",       4));
+}
+
 struct InterruptInsn {
     mixin(bitfields!(
         uint, "comment",    24,
@@ -135,6 +142,20 @@ class CodeGenerator {
         uint targetAddress = insn.arguments[0].get!Address.value;
         int offset = (targetAddress - insn.address);
         branchInsn.offset = ((offset - 8) >> 2);
+
+        return cast(ubyte[]) branchInsn[0..1];
+    }
+
+    ubyte[] generateBranchExchangeInstruction(Instruction insn) {
+        if (!ensureArgumentTypes(insn, [typeid(Register)])) {
+            return [0, 0, 0, 0];
+        }
+
+        assert(insn.opcode == OPCODES.bx);
+        BranchExchangeInsn* branchInsn = new BranchExchangeInsn;
+        branchInsn.cond = cast(uint)insn.extension;
+        branchInsn.opcode = 0b00100101111111111110001;
+        branchInsn.operandReg = to!uint(insn.arguments[0].get!Register.register);
 
         return cast(ubyte[]) branchInsn[0..1];
     }
@@ -306,6 +327,8 @@ class CodeGenerator {
             case OPCODES.b:
             case OPCODES.bl:
                 return generateBranchInstruction(ins);
+            case OPCODES.bx:
+                return generateBranchExchangeInstruction(ins);
             case OPCODES.swi:
                 return generateInterruptInstruction(ins);
             case OPCODES.and:

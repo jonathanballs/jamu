@@ -100,6 +100,9 @@ class Parser {
         wloop: while (true) {
             auto t = peek();
             switch (t.type) {
+                case TOK.eof:
+                    break wloop;
+
                 // New line only if no arguments
                 case TOK.newline:
                      next();
