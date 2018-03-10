@@ -13,14 +13,12 @@ import elfGenerator;
 
 void main(string[] args)
 {
-    // Temporary just set meadow.s as the default file
-    if (args.length != 2)
-        args ~= "testfiles/meadow.s";
-
-    auto parsedArgs = getopt(args);
+    string outputFilename = "a.out";
+    auto parsedArgs = getopt(args,
+            "output", &outputFilename,);
 
     // Print help if requested or if a filename was not given
-    if (parsedArgs.helpWanted || args.length != 2) {
+    if (parsedArgs.helpWanted || args.length == 1) {
         printHelp();
         return;
     }
@@ -32,13 +30,12 @@ void main(string[] args)
         return;
     }
 
-    parseFile(entryFileName);
+    assembleFile(entryFileName, outputFilename);
 }
 
-void parseFile(string filename) {
+void assembleFile(string filename, string outputFilename) {
     auto fileText = readText(filename);
     try {
-
         auto tokens = new Lexer(filename, fileText).lex();
         auto program = new Parser(tokens).parse();
         program = new AddressResolver(program).resolve();
@@ -46,19 +43,7 @@ void parseFile(string filename) {
         auto compiledCode = new CodeGenerator(program).generateCode();
 
         // Write output
-        new ElfGenerator(compiledCode).writeElfFile("a.out");
-
-        // Output the generated code
-        //import std.digest.digest;
-        //foreach(i; 0..(compiledCode.length / 4)) {
-            //write("0x");
-            //write(format!("%04x")(i*4));
-            //writeln("    0x", toHexString!(LetterCase.lower)(compiledCode[i*4..(i+1)*4]));
-        //}
-
-        //foreach(i; 0..(compiledCode.length / 4)) {
-            //writeln("", toHexString!(LetterCase.lower)(compiledCode[i*4..(i+1)*4]));
-        //}
+        new ElfGenerator(compiledCode).writeElfFile(outputFilename);
     }
     catch(LexException e) {
         writeln();
