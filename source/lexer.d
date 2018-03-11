@@ -75,8 +75,41 @@ class Lexer {
             auto t = keywordTokens[r.toLower()];
             t.location = this.tokenStartLocation;
             return t;
+        } else if (peek() == ':') {
+            r ~= next();
+            return Token(TOK.labelDef, r, this.tokenStartLocation);
         } else {
-            return Token(TOK.label, r, this.tokenStartLocation);
+            errors ~= new LexError(tokenStartLocation, 1,
+                    "Unknown identifier '" ~ r ~ "'");
+            skipToEndOfLine();
+            return Token();
+        }
+    }
+
+    Token lexDirective() {
+        assert(peek() == '.');
+        string r = "" ~ next();
+        do {
+            r ~= next();
+        } while(isAlphaNum(peek()) || peek() == '_');
+
+        return Token(TOK.directive, r, this.tokenStartLocation);
+    }
+
+    Token lexLabelExpr() {
+        string r = "";
+        do {
+            r ~= next();
+        } while(isAlphaNum(peek()) || peek() == '_');
+
+        // Check if it's a keyword otherwise it's a label
+        if (r.toLower() in keywordTokens) {
+            errors ~= new LexError(tokenStartLocation, cast(uint)r.length,
+                    "Labels may not be instructions or directives");
+            skipToEndOfLine();
+            return Token();
+        } else {
+            return Token(TOK.labelExpr, r, this.tokenStartLocation);
         }
     }
 
@@ -144,9 +177,7 @@ class Lexer {
                 case ';': // Comments. Remember to log end of line
                     while(peek() != '\n' && peek() != '\0') { next(); }
                     break;
-                case '0': // Numbers
-                ..
-                case '9':
+                case '0': ..  case '9':
                     tokens ~= lexNumber();
                     break;
                 case '#':
@@ -157,7 +188,12 @@ class Lexer {
                         writeln("Error unexpected char after #: " ~ next());
                     }
                     break;
-
+                case '=':
+                    tokens ~= lexLabelExpr();
+                    break;
+                case '.':
+                    tokens ~= lexDirective();
+                    break;
                 // Identifiers
                 case 'a': .. case 'z':
                 case 'A': .. case 'Z':

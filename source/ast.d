@@ -87,14 +87,25 @@ struct Integer {
     }
 }
 
-struct Label {
+struct LabelDef {
     string name;
     NodeMeta meta;
-
     uint address;
 
     string toString() {
-        auto s = "<LABEL " ~ name ~ " >";
+        auto s = "<LABELDEF " ~ name ~ " >";
+        s = format!"0x%08x "(address) ~ s;
+        return s;
+    }
+}
+
+struct LabelExpr {
+    string name;
+    NodeMeta meta;
+    uint address;
+
+    string toString() {
+        auto s = "<LABELEXPR " ~ name ~ " >";
         s = format!"0x%08x "(address) ~ s;
         return s;
     }

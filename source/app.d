@@ -12,11 +12,13 @@ import addressResolver;
 import codeGenerator;
 import elfGenerator;
 
+bool shouldPrintTokens;
 void main(string[] args)
 {
     string outputFilename = "a.out";
     auto parsedArgs = getopt(args,
-            "output", &outputFilename,);
+            "tokens", &shouldPrintTokens,
+            "output", &outputFilename);
 
     // Print help if requested or if a filename was not given
     if (parsedArgs.helpWanted || args.length == 1) {
@@ -38,6 +40,12 @@ void assembleFile(string filename, string outputFilename) {
     auto fileText = readText(filename);
     try {
         auto tokens = new Lexer(filename, fileText).lex();
+        if (shouldPrintTokens) {
+            foreach(t; tokens) {
+                writeln(t);
+            }
+        }
+
         auto program = new Parser(tokens).parse();
         program = new AddressResolver(program).resolve();
 

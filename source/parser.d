@@ -87,10 +87,16 @@ class Parser {
         return Register(registerToEnum(t.value), NodeMeta([t]));
     }
 
-    Label parseLabel() {
-        assert(peek().type == TOK.label);
+    LabelExpr parseLabelExpr() {
+        assert(peek().type == TOK.labelExpr);
         auto t = next();
-        return Label(t.value, NodeMeta([t]));
+        return LabelExpr(t.value[1..$], NodeMeta([t]));
+    }
+
+    LabelExpr parseLabelDef() {
+        assert(peek().type == TOK.labelDef);
+        auto t = next();
+        return LabelExpr(t.value[0..$-1], NodeMeta([t]));
     }
 
     Variant[] parseArguments() {
@@ -111,15 +117,15 @@ class Parser {
                 case TOK.string_:
                 case TOK.integer:
                 case TOK.register:
-                case TOK.label:
+                case TOK.labelExpr:
                     if (peek().type == TOK.string_) {
                         arguments ~= cast(Variant)parseString();
                     } else if (peek().type == TOK.integer) {
                         arguments ~= cast(Variant)parseInteger();
                     } else if (peek().type == TOK.register) {
                         arguments ~= cast(Variant)parseRegister();
-                    } else if (peek().type == TOK.label) {
-                        arguments ~= cast(Variant)parseLabel();
+                    } else if (peek().type == TOK.labelExpr) {
+                        arguments ~= cast(Variant)parseLabelExpr();
                     } else {
                         assert(0);
                     }
@@ -134,13 +140,14 @@ class Parser {
                     } else if (peek().type == TOK.integer
                             || peek().type == TOK.string_
                             || peek().type == TOK.register
-                            || peek().type == TOK.label) {
+                            || peek().type == TOK.labelExpr) {
                         errors ~= new ParseError(next(),
                                 "Error: Arguments must be separated by" ~
                                 " a comma");
                         skipToEndOfLine();
                         break wloop;
                     } else {
+                        // Throw an error
                         continue;
                     }
 
@@ -205,8 +212,8 @@ class Parser {
                 case TOK.newline:
                     next();
                     continue;
-                case TOK.label:
-                    Variant v = Label(peek().value, NodeMeta([peek()]));
+                case TOK.labelDef:
+                    Variant v = LabelDef(peek().value[0..$-1], NodeMeta([peek()]));
                     next();
                     nodes ~= v;
                     break;

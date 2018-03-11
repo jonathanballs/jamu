@@ -85,13 +85,15 @@ enum DIRECTIVES {
 enum TOK : int {
     comma,
     directive,
+    eof,
+    expr,
     instruction,
-    label,
-    newline,
     integer,
+    labelDef,
+    labelExpr,
+    newline,
     register,
     string_,
-    eof,
 }
 
 enum commentStart = ';';
@@ -159,12 +161,13 @@ Tuple!(OPCODES, "opcode", OPCODE_EXTS, "extension", bool, "setBit")
 }
 
 DIRECTIVES directiveToEnum(string directive) {
-    if (directive == "align") {
+    directive = directive.toLower();
+    if (directive == ".align") {
         return DIRECTIVES.align_;
     }
 
     foreach(d; [EnumMembers!DIRECTIVES]) {
-        if (to!string(d) == directive)
+        if ('.' ~ to!string(d) == directive)
             return d;
     }
 

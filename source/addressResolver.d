@@ -17,14 +17,14 @@ class AddressResolver {
 
     Program resolve() {
         Program resolvedProgram;
-        Label[string] labels;
+        LabelDef[string] labels;
 
         // First pass
         // Calculate addresses of all top level nodes
         uint currentAddress;
         foreach(ref node; program.nodes) {
-            if (node.type == typeid(Label)) {
-                auto label = node.get!(Label);
+            if (node.type == typeid(LabelDef)) {
+                auto label = node.get!(LabelDef);
                 label.address = currentAddress;
                 resolvedProgram.nodes ~= cast(Variant)label;
 
@@ -38,7 +38,6 @@ class AddressResolver {
                 }
 
             } else if (node.type == typeid(Instruction)) {
-
                 auto ins = node.get!(Instruction);
                 ins.address = currentAddress;
                 currentAddress += 4;
@@ -86,8 +85,8 @@ class AddressResolver {
             foreach (i, arg; node.arguments) {
 
                 // If a label then replace it with an address
-                if (arg.type == typeid(Label)) {
-                    auto argL = arg.get!(Label);
+                if (arg.type == typeid(LabelExpr)) {
+                    auto argL = arg.get!(LabelExpr);
 
                     if (argL.name !in labels) {
                         errors ~= new TypeError(argL.meta.tokens[0],
