@@ -29,8 +29,8 @@ static this() {
             // Opcode conditions
             foreach(e; [EnumMembers!OPCODE_EXTS]) {
                 auto condString = to!string(e);
-                keywordTokens[opcodeString ~ condString ~ "s"] =
-                    Token(TOK.instruction, opcodeString ~ condString ~ "s");
+                keywordTokens[opcodeString ~ "s" ~ condString] =
+                    Token(TOK.instruction, opcodeString ~ "s" ~ condString);
             }
         }
 
@@ -148,7 +148,7 @@ Tuple!(OPCODES, "opcode", OPCODE_EXTS, "extension", bool, "setBit")
         }
 
         foreach(e; [EnumMembers!OPCODE_EXTS]) {
-            if (opcodeString ~ to!string(e) ~ "s" == ins) {
+            if (opcodeString ~ "s" ~ to!string(e) == ins) {
                 return tuple!("opcode", "extension", "setBit")(o, e, true);
             }
         }

@@ -3,6 +3,7 @@ import std.file;
 import std.format;
 import std.getopt;
 import std.variant;
+import core.stdc.stdlib;
 
 import exceptions;
 import lexer;
@@ -51,6 +52,7 @@ void assembleFile(string filename, string outputFilename) {
             lexError.printError(fileText);
             writeln();
         }
+        exit(1);
     }
     catch(ParseException e) {
         writeln();
@@ -58,6 +60,7 @@ void assembleFile(string filename, string outputFilename) {
             parseError.printError(fileText);
             writeln();
         }
+        exit(2);
     }
     catch(TypeException e) {
         writeln();
@@ -65,6 +68,7 @@ void assembleFile(string filename, string outputFilename) {
             typeError.printError(fileText);
             writeln();
         }
+        exit(3);
     }
 }
 
