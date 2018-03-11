@@ -91,6 +91,9 @@ class Instruction {
             case 0b001:
             case 0b000:
                 return new DataProcessingInstruction(location, faBytes);
+            case 0b010:
+            case 0b011:
+                return new SingleTransferInstruction(location, faBytes);
             default:
                 return new Instruction(location, faBytes);
         }
@@ -298,6 +301,38 @@ class DataProcessingInstruction : Instruction {
         }
 
         return ins;
+    }
+}
+
+class SingleTransferInstruction : Instruction {
+
+    struct SingleTransferInsn {
+        mixin(bitfields!(
+            uint, "offset",     12,
+            uint, "destReg",    4,
+            uint, "operandReg", 4,
+            bool, "loadBit",    1,
+            bool, "writeBackBit",1,
+            bool, "byteBit",    1,
+            bool, "upBit",      1,
+            bool, "preBit",     1,
+            bool, "immediate",  1,
+            byte, "opcode",     2,
+            uint, "cond",       4));
+    }
+
+    SingleTransferInsn* castedBytes() {
+        return cast(SingleTransferInsn*) source.ptr;
+    }
+
+    this(uint location, ubyte[4] source) {
+        super(location, source);
+    }
+
+    override string toString() {
+        if (castedBytes.loadBit)
+            return "LDR";
+        return "STR";
     }
 }
 
