@@ -80,6 +80,8 @@ class ElfParser {
         }
 
         auto elfHeader = cast(ElfHeader *) fileBytes.ptr;
+        config.entryPoint = elfHeader.e_entry;
+
         auto pHeader = cast(ProgramHeader *) (fileBytes.ptr + ElfHeader.sizeof);
         auto segmentBytes = fileBytes[pHeader.p_offset .. $];
 
