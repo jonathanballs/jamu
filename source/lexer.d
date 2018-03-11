@@ -79,10 +79,7 @@ class Lexer {
             r ~= next();
             return Token(TOK.labelDef, r, this.tokenStartLocation);
         } else {
-            errors ~= new LexError(tokenStartLocation, 1,
-                    "Unknown identifier '" ~ r ~ "'");
-            skipToEndOfLine();
-            return Token();
+            return Token(TOK.labelExpr, r, this.tokenStartLocation);
         }
     }
 
@@ -94,23 +91,6 @@ class Lexer {
         } while(isAlphaNum(peek()) || peek() == '_');
 
         return Token(TOK.directive, r, this.tokenStartLocation);
-    }
-
-    Token lexLabelExpr() {
-        string r = "";
-        do {
-            r ~= next();
-        } while(isAlphaNum(peek()) || peek() == '_');
-
-        // Check if it's a keyword otherwise it's a label
-        if (r.toLower() in keywordTokens) {
-            errors ~= new LexError(tokenStartLocation, cast(uint)r.length,
-                    "Labels may not be instructions or directives");
-            skipToEndOfLine();
-            return Token();
-        } else {
-            return Token(TOK.labelExpr, r, this.tokenStartLocation);
-        }
     }
 
     Token lexString() {
@@ -187,9 +167,6 @@ class Lexer {
                     } else {
                         writeln("Error unexpected char after #: " ~ next());
                     }
-                    break;
-                case '=':
-                    tokens ~= lexLabelExpr();
                     break;
                 case '.':
                     tokens ~= lexDirective();

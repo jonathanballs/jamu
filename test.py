@@ -24,7 +24,6 @@ CONDITIONS = [
 if not os.path.exists(TEST_DIR):
     os.mkdir(TEST_DIR)
 
-
 def test_code(test_name, source):
     print(test_name + "...", end='', flush=True)
 
@@ -52,7 +51,7 @@ def test_code(test_name, source):
         for l in out[1:6]:
             print(l)
         if len(out) > 5:
-            print("and {} other errors".format((len(out) // 6) - 1))
+            print("and {} other errors...".format((len(out) // 6) - 1))
         return
 
     def getSegmentBytes(filename):
@@ -63,7 +62,7 @@ def test_code(test_name, source):
     j_bytes = getSegmentBytes(jasm_output_filename).hex()
     k_bytes = None
     try:
-        k_bytes = bytes(ks.asm(str.encode(source))[0]).hex()
+        k_bytes = bytes(ks.asm(str.encode(source), addr=0)[0]).hex()
     except KsError as e:
         print(" \033[91m✗\033[0m Keystone failed to compile ({})".format(
             e.message
@@ -83,7 +82,6 @@ def test_code(test_name, source):
                 return
     else:
         print(" \033[92m✔\033[0m")
-
 
 #
 #
@@ -163,6 +161,37 @@ for insn in MOV_INSN:
         source += "{}s{} R{}, R{}\n".format(insn, CONDITIONS[i%16], i%16, i//16)
     for i in range(NUM_INS_PER_TEST):
         source += "{}s{} R{}, #{}\n".format(insn, CONDITIONS[i%16], i%16, i)
+    test_code("Testing {} instruction".format(insn), source)
+
+
+#
+#
+# SOFTWARE INTERRUPTS
+#
+#
+
+source = ''
+for i in range(NUM_INS_PER_TEST):
+    source += "SWI #{}\n".format(i)
+for i in range(NUM_INS_PER_TEST):
+    source += "SWI{} #{}\n".format(CONDITIONS[i%16], i)
+test_code("Testing swi instruction", source)
+
+
+#
+#
+# SINGLE STORE INSTRUCTIONS
+#
+#
+SSTORE_INSN = ['ldr', 'str']
+for insn in SSTORE_INSN:
+    source = ''
+    for i in range(NUM_INS_PER_TEST):
+        source += "{} R{}, label\n".format(insn, i%16)
+    for i in range(NUM_INS_PER_TEST):
+        source += "{} R{}, label\n".format(insn, i%16)
+
+    source += 'label:;'
     test_code("Testing {} instruction".format(insn), source)
 
 print("Tested {} instructions".format(TOTAL_INS_TESTED))

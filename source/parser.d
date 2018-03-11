@@ -90,7 +90,7 @@ class Parser {
     LabelExpr parseLabelExpr() {
         assert(peek().type == TOK.labelExpr);
         auto t = next();
-        return LabelExpr(t.value[1..$], NodeMeta([t]));
+        return LabelExpr(t.value, NodeMeta([t]));
     }
 
     LabelExpr parseLabelDef() {

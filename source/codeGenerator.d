@@ -313,7 +313,7 @@ class CodeGenerator {
         loadInsn.destReg = to!uint(insn.arguments[0].get!Register.register);
 
         int offset = insn.arguments[1].get!Address.value - (insn.address + 8);
-        loadInsn.upBit = offset > 0;
+        loadInsn.upBit = offset >= 0;
         loadInsn.offset = abs(offset);
         loadInsn.operandReg = 0b1111;
         loadInsn.preBit = true;
@@ -353,6 +353,7 @@ class CodeGenerator {
             case OPCODES.mvn:
                 return generateMovInstruction(ins);
             case OPCODES.ldr:
+            case OPCODES.str:
                 return generateLoadInstruction(ins);
             default:
                 return [0, 0, 0, 0];
