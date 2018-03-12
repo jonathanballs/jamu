@@ -55,7 +55,8 @@ class Instruction {
         return "R" ~ to!string(regNum);
     }
 
-    string conditionString(uint cond) {
+    string conditionString() {
+        auto cond = (cast(Insn *) source.ptr).cond;
         switch (cond) {
             case 0b0000: return "EQ";
             case 0b0001: return "NE";
@@ -137,7 +138,7 @@ class BranchInstruction : Instruction {
         auto mnemonic = "B" ~ (castedBytes.linkbit ? "L" : "");
         auto offset = castedBytes.offset << 2;
         return format!"%s%s 0x%x"(mnemonic,
-               conditionString(castedBytes.cond),
+               conditionString(),
                offset + location + 8);
     }
 }
@@ -283,7 +284,7 @@ class DataProcessingInstruction : Instruction {
     }
 
     override string toString() {
-        auto ins = instructionString() ~ conditionString(castedBytes.cond);
+        auto ins = instructionString() ~ conditionString();
         if (usesBaseRegister()) {
             ins ~= " " ~ registerString(castedBytes.destReg); // Destination reg
         }
@@ -310,7 +311,7 @@ class SingleTransferInstruction : Instruction {
         mixin(bitfields!(
             uint, "offset",     12,
             uint, "destReg",    4,
-            uint, "operandReg", 4,
+            uint, "baseReg",    4,
             bool, "loadBit",    1,
             bool, "writeBackBit",1,
             bool, "byteBit",    1,
@@ -330,9 +331,31 @@ class SingleTransferInstruction : Instruction {
     }
 
     override string toString() {
-        if (castedBytes.loadBit)
-            return "LDR";
-        return "STR";
+        auto raw = castedBytes();
+
+        auto r = format!"%s%s%s R%d "(
+            raw.loadBit ? "LDR" : "STR",
+            raw.byteBit ? "B" : "",
+            conditionString(),
+            raw.destReg);
+
+        if (raw.immediate == 0) {
+            r ~= format!"[R%d, #%s%d]%s"(
+                raw.baseReg,
+                raw.upBit ? "" : "-",
+                raw.offset,
+                raw.writeBackBit ? "!" : "");
+        } else {
+            auto offsetReg = raw.offset & 0xf;
+            auto shift =    raw.offset >> 4;
+
+            r ~= format!"[R%d, R%d%s]%s"(
+                raw.baseReg,
+                offsetReg,
+                shift ? format!", #%s"(shift) : "",
+                raw.writeBackBit ? "!" : "");}
+
+        return r;
     }
 }
 
