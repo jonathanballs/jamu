@@ -20,7 +20,13 @@ class Machine {
     Action[] currentStep;
 
     void setMemory(uint start, const ubyte[] data) {
-        assert(start + data.length <= memory.length);
+        if (start + data.length >= memory.length) {
+            import std.stdio;
+            writeln("Tried to set memory to illegal address: ", start,
+                    " of length ", data.length);
+            return;
+        }
+
         foreach(i, b; data) {
             memory[start+i] = b;
         }
