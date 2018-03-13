@@ -154,7 +154,7 @@ void runLoop(Machine machine, EmulatorConfig emuConf) {
                 if (startLoc > machine.config.memorySize - 4) {
                     startLoc = machine.config.memorySize - 4;
                 }
-                uint memLength = command.args.length > 2
+                uint memLength = command.args.length > 1
                     ? to!int(command.args[1])
                     : 64;
 
