@@ -189,6 +189,22 @@ void runLoop(Machine machine, EmulatorConfig emuConf) {
                 writeln(j);
                 continue;
 
+            case "load_elf":
+                if (command.args.length != 1) {
+                    writeError("Please supply the path of the file to load", emuConf.jsonInterface);
+                    continue;
+                }
+
+                try {
+                    machine = ElfParser.parseElf(command.args[0], MachineConfig());
+                    printMachineStatus(&machine, emuConf);
+                    JSONValue j = ["result": "done"];
+                    writeln(j);
+                } catch (Exception e) {
+                    writeError(to!string(e.message), emuConf.jsonInterface);
+                }
+                continue;
+
             case "step":
             case "next":
                 auto insnLocation = machine.pc() - 8;
