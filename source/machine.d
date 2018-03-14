@@ -106,7 +106,9 @@ class Machine {
 
     this(MachineConfig config) {
         memory.length = config.memorySize;
-        registers[15] = config.entryPoint + 8;
+        registers[15] = config.entryPoint + 8; // PC
+        registers[14] = config.memorySize - 4; // Return address to a nop
+        registers[13] = config.memorySize - 4;
         this.config = config;
     }
 }
