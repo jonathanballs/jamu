@@ -148,11 +148,13 @@ class DataProcessingInstruction : Instruction {
 
     override string toString() {
         auto ins = instructionString() ~ conditionString();
-        if (usesBaseRegister()) {
+
+        if (usesDestReg()) {
             ins ~= " " ~ registerString(castedBytes.destReg); // Destination reg
         }
-        if (usesDestReg()) {
-            if (usesBaseRegister())
+
+        if (usesBaseRegister()) {
+            if (usesDestReg())
                 ins ~= ",";
 
             ins ~= " " ~ registerString(castedBytes.operandReg);
