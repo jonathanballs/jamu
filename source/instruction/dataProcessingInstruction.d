@@ -14,9 +14,7 @@ class DataProcessingInstruction : Instruction {
             return super.execute(m);
         }
 
-        auto op2Val = castedBytes.immediate
-            ? castedBytes.operand2
-            : m.getRegister(castedBytes.operand2);
+        auto op2Val = evaluateOp2(m, castedBytes.operand2, castedBytes.immediate);
         auto op1Val = m.getRegister(castedBytes.operandReg);
 
         auto cpsr = m.getCpsr();

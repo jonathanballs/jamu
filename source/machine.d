@@ -5,7 +5,7 @@ import std.digest.md;
 import std.range.primitives : popBack;
 
 struct MachineConfig {
-    uint memorySize = 0x10000;      // 64kb
+    uint memorySize = 0x1000;      // 4kb
     uint entryPoint = 0x0;
 }
 
@@ -33,6 +33,11 @@ class Machine {
     }
 
     ubyte[] getMemory(uint start, uint length) {
+        if (start+length > config.memorySize) {
+            ubyte[] r;
+            r.length = length;
+            return r;
+        }
         return memory[start .. start + length];
     }
 

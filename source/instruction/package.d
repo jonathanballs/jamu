@@ -91,18 +91,24 @@ class Instruction {
     static Instruction parse(uint location, ubyte[] bytes) {
         assert(source.length == 4);
         auto faBytes = * cast(ubyte[4]*) bytes.ptr;
+        auto uintBytes = * cast(uint*)faBytes.ptr;
 
-        switch ((cast(Insn *) faBytes.ptr).opcode) {
-            case 0b101:
-                return new BranchInstruction(location, faBytes);
-            case 0b001:
-            case 0b000:
-                return new DataProcessingInstruction(location, faBytes);
-            case 0b010:
-            case 0b011:
-                return new SingleTransferInstruction(location, faBytes);
-            default:
-                return new Instruction(location, faBytes);
+        if (((uintBytes & 0xF0000000) >> 24) == 0xF) {
+            return new UnimplementedInstruction(location, faBytes, "SWI");
+        } else if ((uintBytes & 0x0C000000) == 0) {
+            return new DataProcessingInstruction(location, faBytes);
+        //} else if (((uintBytes & 0x0FC00000) >> 22) == 0) {
+            //return new UnimplementedInstruction(location, faBytes, "MULT");
+        //} else if (((uintBytes & 0x00000090) >> 4) == 9) {
+            //return new UnimplementedInstruction(location, faBytes, "MULT2");
+        } else if (((uintBytes & 0x0E000000) >> 25) == 5) {
+            return new BranchInstruction(location, faBytes);
+        } else if (((uintBytes & 0x0C000000) >> 26) == 1) {
+            return new SingleTransferInstruction(location, faBytes);
+        } else if (((uintBytes & 0x0E000000) >> 25) == 4) {
+            return new UnimplementedInstruction(location, faBytes, "LDM/STM");
+        } else {
+            return new UnimplementedInstruction(location, faBytes, "BADINS");
         }
     }
 
@@ -110,6 +116,76 @@ class Instruction {
         import std.digest;
         return "Unknown instruction: " ~
             to!string(toHexString!(LetterCase.lower)(source));
+    }
+
+    uint evaluateOp2(Machine* m, uint operand, bool immediate) {
+        import core.bitop;
+
+        if (immediate) {
+            // 11      8 7                 0|
+            // | Rotate |     Immediate     |
+            // ------------------------------
+            // The immediate value is rotated right by Rotate*2
+            uint value = operand & 0xff;
+            uint rotate = operand >> 8;
+
+            return ror(value, rotate*2);
+        } else { // Shifting a register
+
+            //  -----------------------------
+            // |11               4|3       0|
+            //  -----------------------------
+            // |       Shift      |   Reg   |
+            //  ----------------------------
+
+            // Where shift is either:
+            //  -----------------------------
+            // |11           7|6        5| 4 |
+            //  -----------------------------
+            // |   Amount     |   Type   | 1 |
+            //  -----------------------------
+
+            // Or:
+            //  -----------------------------
+            // |11       8| 7 |6        5| 5 |
+            //  -----------------------------
+            // |   Reg    | 0 |   Type   | 0 |
+            //  -----------------------------
+
+            uint valToShift = m.getRegister(operand & 0xf);
+            uint shift = operand >> 4;
+
+            uint shiftAmount;
+            uint shiftType = (shift >> 1) & 0x3;
+
+            if (shift & 1) { // If shifting by hardcoded amount
+                shiftAmount = shift >> 3;
+            } else {
+                shiftAmount = m.getRegister(shift >> 4);
+            }
+
+
+            switch (shiftType) {
+                case 0b00: return valToShift << shiftAmount; // LSL
+                case 0b01: return valToShift >>> shiftAmount; // LSR
+                case 0b10: return valToShift >> shiftAmount; // ARR
+                case 0b11: return ror(valToShift, shiftAmount); // ROR
+                default: assert(0);
+            }
+        }
+    }
+}
+
+class UnimplementedInstruction : Instruction {
+    string name;
+
+    this(uint location, ubyte[4] source, string s) {
+        super(location, source);
+        this.name = s;
+    }
+
+    override string toString() {
+        return name ~ " (UNIMP)";
     }
 }
 
