@@ -11,6 +11,7 @@ import machine;
 public import singleDataTransferInstruction;
 public import branchInstruction;
 public import dataProcessingInstruction;
+public import blockTransferInstruction;
 
 // Base class for a decompiled instruction that can be
 // excecuted
@@ -106,7 +107,7 @@ class Instruction {
         } else if (((uintBytes & 0x0C000000) >> 26) == 1) {
             return new SingleTransferInstruction(location, faBytes);
         } else if (((uintBytes & 0x0E000000) >> 25) == 4) {
-            return new UnimplementedInstruction(location, faBytes, "LDM/STM");
+            return new BlockTransferInstruction(location, faBytes);
         } else {
             return new UnimplementedInstruction(location, faBytes, "BADINS");
         }
