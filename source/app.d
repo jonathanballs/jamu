@@ -190,6 +190,7 @@ void runLoop(Machine machine, EmulatorConfig emuConf) {
                 continue;
 
             case "load_elf":
+            case "loadelf":
                 if (command.args.length != 1) {
                     writeError("Please supply the path of the file to load", emuConf.jsonInterface);
                     continue;
@@ -207,10 +208,18 @@ void runLoop(Machine machine, EmulatorConfig emuConf) {
 
             case "step":
             case "next":
-                auto insnLocation = machine.pc() - 8;
-                auto insn = Instruction.parse(insnLocation,
-                        machine.getMemory(insnLocation, 4));
-                insn.execute(&machine);
+
+                auto numSteps = command.args.length
+                    ? to!uint(command.args[0])
+                    : 1;
+
+                foreach (i; 0..numSteps) {
+                    auto insnLocation = machine.pc() - 8;
+                    auto insn = Instruction.parse(insnLocation,
+                            machine.getMemory(insnLocation, 4));
+                    insn.execute(&machine);
+                }
+
                 printMachineStatus(&machine, emuConf);
                 JSONValue j = ["result": "done"];
                 writeln(j);
