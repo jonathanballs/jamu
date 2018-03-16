@@ -90,7 +90,6 @@ class SingleTransferInstruction : Instruction {
         } else { // Store val
             uint regVal = m.getRegister(raw.destReg);
             ubyte[4] memVal = *cast(ubyte[4]*)&regVal;
-            writeln("memVal: ", memVal);
             m.setMemory(loadAddress, memVal);
         }
 

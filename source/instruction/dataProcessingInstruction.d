@@ -23,9 +23,15 @@ class DataProcessingInstruction : Instruction {
         switch(instructionString()) {
             case "AND": result = op1Val & op2Val; break;
             case "EOR": result = op1Val ^ op2Val; break;
-            case "SUB": result = op1Val - op2Val; break;
+            case "SUB":
+                result = op1Val - op2Val;
+                cpsr.overflow = op1Val < op2Val;
+                break;
             case "RSB": result = op2Val - op1Val; break;
-            case "ADD": result = op1Val + op2Val; break;
+            case "ADD":
+                result = op1Val + op2Val;
+                cpsr.overflow = (0xffffffff - op1Val) > op2Val;
+                break;
             case "ADC": result = op1Val + op2Val + cpsr.carry; break;
             case "SBC": result = op1Val - op2Val - 1 + cpsr.carry; break;
             case "RSC": result = op2Val - op1Val - 1 + cpsr.carry; break;
