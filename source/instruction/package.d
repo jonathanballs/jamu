@@ -159,10 +159,12 @@ class Instruction {
             uint shiftAmount;
             uint shiftType = (shift >> 1) & 0x3;
 
-            if (shift & 1) { // If shifting by hardcoded amount
-                shiftAmount = shift >> 3;
-            } else {
+            auto shiftByReg = shift & 1;
+
+            if (shiftByReg) { // If shifting by hardcoded amount
                 shiftAmount = m.getRegister(shift >> 4);
+            } else {
+                shiftAmount = shift >> 3;
             }
 
 
