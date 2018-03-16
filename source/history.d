@@ -30,5 +30,13 @@ struct Action {
         originalValue = (cast(ubyte*)&_originalValue)[0..4].dup;
         newValue = (cast(ubyte*)&_newValue)[0..4].dup;
     }
+
+    this(ACTIONTYPES _type, uint _resourceID,
+            ubyte[] _originalValue, ubyte[] _newValue) {
+        type = _type;
+        resourceID = _resourceID;
+        originalValue = _originalValue;
+        newValue = _newValue;
+    }
 }
 

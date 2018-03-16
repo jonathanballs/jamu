@@ -20,6 +20,10 @@ class Machine {
     Action[] currentStep;
 
     void setMemory(uint start, const ubyte[] data) {
+
+        currentStep ~= Action(ACTIONTYPES.memoryMod, start,
+                getMemory(start, cast(uint) data.length).dup, data.dup);
+
         if (start + data.length >= memory.length) {
             import std.stdio;
             writeln("Tried to set memory to illegal address: ", start,
@@ -75,6 +79,12 @@ class Machine {
                     continue;
                 case ACTIONTYPES.CPSRMod:
                     cpsr = *cast(Cpsr*)action.originalValue.ptr;
+                    continue;
+                case ACTIONTYPES.memoryMod:
+                    writeln(action);
+                    foreach(i, b; action.originalValue) {
+                        memory[action.resourceID+i] = b;
+                    }
                     continue;
                 default:
                     assert(0);

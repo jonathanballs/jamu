@@ -87,6 +87,8 @@ class ElfParser {
 
         auto machine = new Machine(config);
         machine.setMemory(pHeader.p_vaddr, segmentBytes);
+        // Remove setMemory from history
+        machine.currentStep = [];
 
         return machine;
     }
