@@ -3,10 +3,11 @@
 	"authors": [
 		"Jonathan Balls"
 	],
-	"description": "An ARM7-TDMI emulator",
+	"description": "An ARM7-TDMI emulator and assembler",
         "dependencies": {
             "colorize": "~>1.0.5"
         },
 	"copyright": "Copyright © 2018, Jonathan Balls",
 	"license": "MIT"
 }
+
