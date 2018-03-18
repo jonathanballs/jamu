@@ -7,11 +7,11 @@ import std.algorithm.mutation: reverse;
 
 import jamu.emulator.machine;
 import jamu.emulator.instruction;
-import jamu.emulator.elfParser;
+import jamu.common.elf;
 
 struct EmulatorConfig {
     bool jsonInterface;
-    string filename;
+    string fileName;
 }
 
 struct EmulatorCommand {
@@ -27,11 +27,11 @@ void main(string[] args)
     auto helpInfo = getopt(
             args,
             "json", &emuConf.jsonInterface,
-            "file", &emuConf.filename);
+            "file", &emuConf.fileName);
 
-    Machine machine = emuConf.filename
-        ? ElfParser.parseElf(emuConf.filename, machineConf)
-        : new Machine(machineConf);
+    Machine machine = new Machine(machineConf);
+    if (emuConf.fileName)
+        machine.loadElf(Elf.parseFile(emuConf.fileName));
 
     // Set output to line buffering for json output
     if (emuConf.jsonInterface) {
@@ -197,8 +197,8 @@ void runLoop(Machine machine, EmulatorConfig emuConf) {
                 }
 
                 try {
-                    machine = ElfParser.parseElf(command.args[0], MachineConfig());
-                    printMachineStatus(&machine, emuConf);
+                    machine = new Machine(MachineConfig());
+                    machine.loadElf(Elf.parseFile(command.args[0]));
                     JSONValue j = ["result": "done"];
                     writeln(j);
                 } catch (Exception e) {

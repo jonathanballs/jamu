@@ -1,10 +1,12 @@
 module jamu.emulator.machine;
 
+import std.digest.md;
+import std.range.primitives : popBack;
+
 import jamu.emulator.types;
 import jamu.emulator.history;
 import jamu.emulator.instruction;
-import std.digest.md;
-import std.range.primitives : popBack;
+import jamu.common.elf;
 
 struct MachineConfig {
     uint memorySize = 0x1000;      // 4kb
@@ -127,6 +129,12 @@ class Machine {
         registers[14] = config.memorySize - 4; // Return address to a nop
         registers[13] = config.memorySize - 4;
         this.config = config;
+    }
+
+    void loadElf(Elf elf) {
+        foreach(s; elf.segments()) {
+            this.setMemory(s.header.p_vaddr, s.data);
+        }
     }
 }
 
