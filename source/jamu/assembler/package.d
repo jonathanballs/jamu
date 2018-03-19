@@ -7,54 +7,24 @@ import std.getopt;
 import std.variant;
 import core.stdc.stdlib;
 
+import jamu.common.elf;
 import jamu.assembler.exceptions;
 import jamu.assembler.lexer;
 import jamu.assembler.parser;
 import jamu.assembler.addressResolver;
 import jamu.assembler.codeGenerator;
-import jamu.assembler.elfGenerator;
 
-bool shouldPrintTokens;
-void oldMain(string[] args)
-{
-    string outputFilename = "a.out";
-    auto parsedArgs = getopt(args,
-            "tokens", &shouldPrintTokens,
-            "output", &outputFilename);
-
-    // Print help if requested or if a filename was not given
-    if (parsedArgs.helpWanted || args.length == 1) {
-        printHelp();
-        return;
-    }
-
-    // Get the filename of the assembly file
-    auto entryFileName = args[1];
-    if (!exists(entryFileName)) {
-        writeln("No such file " ~ entryFileName);
-        return;
-    }
-
-    assembleFile(entryFileName, outputFilename);
-}
-
-void assembleFile(string filename, string outputFilename) {
+Elf assembleFile(string filename) {
     auto fileText = readText(filename);
     try {
         auto tokens = new Lexer(filename, fileText).lex();
-        if (shouldPrintTokens) {
-            foreach(t; tokens) {
-                writeln(t);
-            }
-        }
-
         auto program = new Parser(tokens).parse();
         program = new AddressResolver(program).resolve();
 
         auto compiledCode = new CodeGenerator(program).generateCode();
 
         // Write output
-        new ElfGenerator(compiledCode).writeElfFile(outputFilename);
+        return Elf.fromSegmentBytes(compiledCode);
     }
     catch(LexException e) {
         writeln();
@@ -80,11 +50,7 @@ void assembleFile(string filename, string outputFilename) {
         }
         exit(3);
     }
-}
 
-void printHelp() {
-    writeln(
-        "usage: jasm <filename>"
-    );
+    assert(0);
 }
 

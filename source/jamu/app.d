@@ -7,6 +7,8 @@ import std.algorithm.mutation: reverse;
 
 import jamu.emulator.machine;
 import jamu.emulator.instruction;
+import jamu.assembler;
+
 import jamu.common.elf;
 
 struct EmulatorConfig {
@@ -31,7 +33,7 @@ void main(string[] args)
 
     Machine machine = new Machine(machineConf);
     if (emuConf.fileName)
-        machine.loadElf(Elf.parseFile(emuConf.fileName));
+        machine.loadElf(Elf.readFile(emuConf.fileName));
 
     // Set output to line buffering for json output
     if (emuConf.jsonInterface) {
@@ -198,7 +200,23 @@ void runLoop(Machine machine, EmulatorConfig emuConf) {
 
                 try {
                     machine = new Machine(MachineConfig());
-                    machine.loadElf(Elf.parseFile(command.args[0]));
+                    machine.loadElf(Elf.readFile(command.args[0]));
+                    JSONValue j = ["result": "done"];
+                    writeln(j);
+                } catch (Exception e) {
+                    writeError(to!string(e.message), emuConf.jsonInterface);
+                }
+                continue;
+
+            case "loadasm":
+            case "load_asm":
+                if (command.args.length != 1) {
+                    writeError("Please supply the path of the file to load", emuConf.jsonInterface);
+                    continue;
+                }
+                try {
+                    machine = new Machine(MachineConfig());
+                    machine.loadElf(assembleFile(command.args[0]));
                     JSONValue j = ["result": "done"];
                     writeln(j);
                 } catch (Exception e) {
