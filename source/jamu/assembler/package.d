@@ -14,43 +14,49 @@ import jamu.assembler.parser;
 import jamu.assembler.addressResolver;
 import jamu.assembler.codeGenerator;
 
-Elf assembleFile(string filename) {
-    auto fileText = readText(filename);
-    try {
-        auto tokens = new Lexer(filename, fileText).lex();
-        auto program = new Parser(tokens).parse();
-        program = new AddressResolver(program).resolve();
-
-        auto compiledCode = new CodeGenerator(program).generateCode();
-
+class Assembler {
+    static Elf assembleFile(string fileName) {
+        auto fileText = readText(fileName);
+        auto compiledBytes = assembleString(fileText, fileName);
         // Write output
-        return Elf.fromSegmentBytes(compiledCode);
-    }
-    catch(LexException e) {
-        writeln();
-        foreach(lexError; e.errors) {
-            lexError.printError(fileText);
-            writeln();
-        }
-        exit(1);
-    }
-    catch(ParseException e) {
-        writeln();
-        foreach(parseError; e.errors) {
-            parseError.printError(fileText);
-            writeln();
-        }
-        exit(2);
-    }
-    catch(TypeException e) {
-        writeln();
-        foreach(typeError; e.errors) {
-            typeError.printError(fileText);
-            writeln();
-        }
-        exit(3);
+        return Elf.fromSegmentBytes(compiledBytes);
     }
 
-    assert(0);
+    static ubyte[] assembleString(string s, string fileName = "") {
+        try {
+            auto tokens = new Lexer(fileName, s).lex();
+            auto program = new Parser(tokens).parse();
+            program = new AddressResolver(program).resolve();
+
+            return new CodeGenerator(program).generateCode();
+
+        }
+        catch(LexException e) {
+            writeln();
+            foreach(lexError; e.errors) {
+                lexError.printError(s);
+                writeln();
+            }
+            exit(1);
+        }
+        catch(ParseException e) {
+            writeln();
+            foreach(parseError; e.errors) {
+                parseError.printError(s);
+                writeln();
+            }
+            exit(2);
+        }
+        catch(TypeException e) {
+            writeln();
+            foreach(typeError; e.errors) {
+                typeError.printError(s);
+                writeln();
+            }
+            exit(3);
+        }
+
+        assert(0);
+    }
 }
 

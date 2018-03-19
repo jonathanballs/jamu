@@ -26,6 +26,13 @@ void main(string[] args)
     EmulatorConfig emuConf;
     MachineConfig machineConf;
 
+    if (args.length == 1) {
+        import jamu.tests;
+        auto testRunner = new JamuTestRunner;
+        testRunner.run();
+        return;
+    }
+
     auto helpInfo = getopt(
             args,
             "json", &emuConf.jsonInterface,
@@ -216,7 +223,7 @@ void runLoop(Machine machine, EmulatorConfig emuConf) {
                 }
                 try {
                     machine = new Machine(MachineConfig());
-                    machine.loadElf(assembleFile(command.args[0]));
+                    machine.loadElf(Assembler.assembleFile(command.args[0]));
                     JSONValue j = ["result": "done"];
                     writeln(j);
                 } catch (Exception e) {

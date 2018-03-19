@@ -8,7 +8,7 @@ jamu.dll
 jamu.a
 jamu.lib
 jamu-test-*
-jamu
+/jamu
 *.exe
 *.o
 *.obj

@@ -3,6 +3,7 @@ module jamu.assembler.parser;
 import std.variant;
 import std.stdio;
 import std.conv;
+import std.uni : toLower;
 import core.stdc.stdlib : exit;
 
 import jamu.assembler.exceptions;
@@ -37,7 +38,7 @@ class Parser {
     }
 
     private void skipToEndOfLine() {
-        while(peek().type != TOK.newline) { next(); }
+        while(peek().type != TOK.newline && peek().type != TOK.eof) { next(); }
     }
 
     this(Token[] tokens) {
@@ -47,7 +48,17 @@ class Parser {
     Integer parseInteger() {
         assert(peek().type == TOK.integer);
         auto t = next();
-        return Integer(to!int(t.value), NodeMeta([t]));
+        auto v = t.value;
+        int base = 10;
+        if (v.length >= 2 && v[1].toLower() == 'b') {
+            v = v[2..$];
+            base = 2;
+        } else if (v.length >= 2 && v[1].toLower() == 'x') {
+            base = 16;
+            v = v[2..$];
+        }
+
+        return Integer(to!int(v, base), NodeMeta([t]));
     }
 
     String parseString() {
@@ -133,7 +144,7 @@ class Parser {
                     }
 
                     // Next should be comma or newline
-                    if (peek().type == TOK.newline) {
+                    if (peek().type == TOK.newline || peek().type == TOK.eof) {
                         next();
                         break wloop;
                     } else if (peek().type == TOK.comma) {
@@ -149,8 +160,7 @@ class Parser {
                         skipToEndOfLine();
                         break wloop;
                     } else {
-                        // Throw an error
-                        continue;
+                        assert(0);
                     }
 
                 case TOK.instruction:

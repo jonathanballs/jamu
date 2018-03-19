@@ -1,11 +1,12 @@
 module jamu.assembler.lexer;
 
 // Tokens
+import std.algorithm : canFind;
 import std.ascii;
 import std.conv;
 import std.stdio;
 import std.string;
-import std.algorithm : canFind;
+import std.uni : toLower;
 
 import jamu.assembler.tokens;
 import jamu.assembler.exceptions;
@@ -56,12 +57,49 @@ class Lexer {
         while (peek() != '\n' && peek() != '\0') { next(); }
     }
 
-    // TODO: support for hexadecimal
+    // Supports 0x, 0b, and normal numbers
     Token lexNumber() {
-        string r = "";
+        auto base = 10;
+
+        string r;
+
+        if (peek() == '0') {
+            switch(peek(2)) {
+                case 'x':
+                case 'X':
+                    base = 16;
+                    r ~= next(); r ~= next();
+                    break;
+                case 'b':
+                case 'B':
+                    base = 2;
+                    r ~= next(); r ~= next();
+                    break;
+                case 0: .. case 9:
+                    errors ~= new LexError(tokenStartLocation, 2,
+                            "Decimal numbers may not start with preceding zeros");
+                    skipToEndOfLine();
+                    return Token();
+                default:
+            }
+        }
+
         do {
-            r ~= next();
-        } while(isDigit(peek()));
+            char c = peek();
+            if (base == 10) {
+                if (isDigit(c)) {
+                    r ~= next();
+                } else break;
+            } else if (base == 16) {
+                if (isHexDigit(c)) {
+                    r ~= next();
+                } else break;
+            } else if (base == 2) {
+                if (c == '0' || c == '1') {
+                    r ~= next();
+                } else break;
+            } else { assert(0); }
+        } while (true);
 
         return Token(TOK.integer, r, this.tokenStartLocation);
     }
