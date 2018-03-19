@@ -36,7 +36,7 @@ abstract class JamuTest {
             cwriteln(" 🗴".color(fg.light_red));
             foreach(message; errorMessages) {
                 if (subTestTarget.length)
-                    write("    ", subTestTarget, ":");
+                    cwrite("    ", subTestTarget.color(fg.blue), ":");
                 else
                     write("    ");
                 writeln(message);
@@ -57,7 +57,7 @@ abstract class JamuTest {
         if (errMessage.length)
             errorMessages ~= errMessage;
         else
-            errorMessages ~= to!string(a) ~ " does not equal " ~ to!string(b);
+            errorMessages ~= '`' ~ to!string(a) ~ "' does not equal `" ~ to!string(b) ~ '\'';
     }
 }
 

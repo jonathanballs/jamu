@@ -113,6 +113,24 @@ class Instruction {
         }
     }
 
+    static Instruction[] parseSegment(ubyte[] bytes) {
+        assert(bytes.length % 4 == 0);
+        Instruction[] instructions;
+        foreach(i; 0..bytes.length / 4) {
+            instructions ~= Instruction.parse(cast(uint)i*4, bytes[i*4..i*4+4]);
+        }
+
+        return instructions;
+    }
+
+    static string disasm(ubyte[] bytes) {
+        string s;
+        foreach(i; parseSegment(bytes)) {
+            s ~= i.toString() ~ '\n';
+        }
+        return s;
+    }
+
     override string toString() {
         import std.digest;
         return "Unknown instruction: " ~
