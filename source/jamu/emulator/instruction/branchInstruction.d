@@ -1,22 +1,14 @@
 module jamu.emulator.instruction.branchInstruction;
 
 import std.conv;
-import std.bitmanip;
 import std.format;
 import std.stdio;
 
 import jamu.emulator.machine;
 import jamu.emulator.instruction;
+import jamu.common.instructionStructs;
 
 class BranchInstruction : Instruction {
-    struct BranchInsn {
-        mixin(bitfields!(
-            int, "offset",     24,
-            bool, "linkbit",    1,
-            uint, "opcode",     3,
-            uint, "cond",       4));
-    }
-
     this(uint location, ubyte[4] source) {
         super(location, source);
         assert(this.castedBytes.opcode == 0b101);

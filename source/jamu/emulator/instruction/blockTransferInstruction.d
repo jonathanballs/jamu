@@ -7,20 +7,9 @@ import std.stdio;
 
 import jamu.emulator.machine;
 import jamu.emulator.instruction;
+import jamu.common.instructionStructs;
 
 class BlockTransferInstruction : Instruction {
-    struct BlockTransferInsn {
-        mixin(bitfields!(
-            int,  "regList",    16,
-            uint, "baseReg",    4,
-            bool, "loadBit",    1,
-            bool, "writeBackBit",1,
-            bool, "PSRBit",     1,
-            bool, "upBit",      1,
-            bool, "preBit",     1,
-            uint, "opcode",     3,
-            uint, "cond",       4));
-    }
 
     uint[] getRegList() {
         uint[] r;
@@ -36,8 +25,8 @@ class BlockTransferInstruction : Instruction {
         assert(this.castedBytes.opcode == 0b100);
     }
 
-    BlockTransferInsn* castedBytes() {
-        return cast(BlockTransferInsn*) source.ptr;
+    LoadStoreBlockInsn* castedBytes() {
+        return cast(LoadStoreBlockInsn*) source.ptr;
     }
 
     override Machine* execute(Machine *m) {

@@ -7,27 +7,11 @@ import std.stdio;
 
 import jamu.emulator.machine;
 import jamu.emulator.instruction;
-
+import jamu.common.instructionStructs;
 
 class SingleTransferInstruction : Instruction {
-
-    struct SingleTransferInsn {
-        mixin(bitfields!(
-            uint, "offset",     12,
-            uint, "destReg",    4,
-            uint, "baseReg",    4,
-            bool, "loadBit",    1,
-            bool, "writeBackBit",1,
-            bool, "byteBit",    1,
-            bool, "upBit",      1,
-            bool, "preBit",     1,
-            bool, "immediate",  1,
-            byte, "opcode",     2,
-            uint, "cond",       4));
-    }
-
-    SingleTransferInsn* castedBytes() {
-        return cast(SingleTransferInsn*) source.ptr;
+    LoadStoreInsn* castedBytes() {
+        return cast(LoadStoreInsn*) source.ptr;
     }
 
     this(uint location, ubyte[4] source) {

@@ -7,6 +7,7 @@ import std.stdio;
 
 import jamu.emulator.machine;
 import jamu.emulator.instruction;
+import jamu.common.instructionStructs;
 
 class DataProcessingInstruction : Instruction {
 
@@ -61,18 +62,6 @@ class DataProcessingInstruction : Instruction {
         }
 
         return super.execute(m);
-    }
-
-    struct DataProcessingInsn {
-        mixin(bitfields!(
-            uint, "operand2",    12,
-            uint, "destReg",    4,
-            uint, "operandReg", 4,
-            bool, "setBit",     1,
-            uint, "opcode",     4,
-            bool, "immediate",  1,
-            uint, "",           2,
-            uint, "cond",       4));
     }
 
     string instructionString() {
