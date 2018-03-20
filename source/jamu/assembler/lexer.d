@@ -192,6 +192,18 @@ class Lexer {
                     tokens ~= Token(TOK.comma, to!string(next()),
                             this.tokenStartLocation);
                     break;
+                case '[':
+                    tokens ~= Token(TOK.openBracket, to!string(next()),
+                            this.tokenStartLocation);
+                    break;
+                case ']':
+                    tokens ~= Token(TOK.closeBracket, to!string(next()),
+                            this.tokenStartLocation);
+                    break;
+                case '!':
+                    tokens ~= Token(TOK.exclamationMark, to!string(next()),
+                            this.tokenStartLocation);
+                    break;
                 // Newlines
                 case '\n':
                     tokens ~= Token(TOK.newline, to!string(next()),
