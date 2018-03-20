@@ -15,6 +15,6 @@ jamu-test-*
 *.lst
 
 a.out
-test.s
+/*.s
 test/tmp/
 
