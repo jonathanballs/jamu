@@ -68,7 +68,7 @@ void main(string[] args)
 
         try
         {
-            auto elf = Assembler.assembleFile(inputFilename);
+            auto elf = Assembler.assembleFile(inputFilename, options);
             elf.writeFile(outputFilename);
         }
         catch(LexException e) {

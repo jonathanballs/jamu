@@ -95,6 +95,9 @@ enum TOK : int {
     newline,
     register,
     string_,
+    openBracket,
+    closeBracket,
+    exclamationMark,
 }
 
 enum commentStart = ';';

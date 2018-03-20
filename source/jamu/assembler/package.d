@@ -8,6 +8,7 @@ import std.variant;
 import core.stdc.stdlib;
 
 import jamu.common.elf;
+import jamu.assembler.tokens;
 import jamu.assembler.exceptions;
 import jamu.assembler.lexer;
 import jamu.assembler.parser;
@@ -26,7 +27,7 @@ class Assembler {
             AssemblerOptions options = AssemblerOptions()) {
 
         auto fileText = readText(fileName);
-        auto compiledBytes = assembleString(fileText, fileName);
+        auto compiledBytes = assembleString(fileText, fileName, options);
         // Write output
         return Elf.fromSegmentBytes(compiledBytes);
     }
@@ -37,6 +38,11 @@ class Assembler {
 
         auto tokens = new Lexer(fileName, s).lex();
         if (options.printTokens) {
+            foreach(token; tokens) {
+                write(token);
+                if (token.type == TOK.newline || token.type == TOK.eof)
+                    writeln();
+            }
         }
 
         auto program = new Parser(tokens).parse();
