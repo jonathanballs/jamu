@@ -14,49 +14,35 @@ import jamu.assembler.parser;
 import jamu.assembler.addressResolver;
 import jamu.assembler.codeGenerator;
 
+struct AssemblerOptions {
+    bool printTokens;
+    bool printSyntaxTree;
+    bool printSymbolTable;
+}
+
 class Assembler {
-    static Elf assembleFile(string fileName) {
+
+    static Elf assembleFile(string fileName,
+            AssemblerOptions options = AssemblerOptions()) {
+
         auto fileText = readText(fileName);
         auto compiledBytes = assembleString(fileText, fileName);
         // Write output
         return Elf.fromSegmentBytes(compiledBytes);
     }
 
-    static ubyte[] assembleString(string s, string fileName = "") {
-        try {
-            auto tokens = new Lexer(fileName, s).lex();
-            auto program = new Parser(tokens).parse();
-            program = new AddressResolver(program).resolve();
+    static ubyte[] assembleString(string s,
+        string fileName = "",
+        AssemblerOptions options = AssemblerOptions()) {
 
-            return new CodeGenerator(program).generateCode();
-
-        }
-        catch(LexException e) {
-            writeln();
-            foreach(lexError; e.errors) {
-                lexError.printError(s);
-                writeln();
-            }
-            exit(1);
-        }
-        catch(ParseException e) {
-            writeln();
-            foreach(parseError; e.errors) {
-                parseError.printError(s);
-                writeln();
-            }
-            exit(2);
-        }
-        catch(TypeException e) {
-            writeln();
-            foreach(typeError; e.errors) {
-                typeError.printError(s);
-                writeln();
-            }
-            exit(3);
+        auto tokens = new Lexer(fileName, s).lex();
+        if (options.printTokens) {
         }
 
-        assert(0);
+        auto program = new Parser(tokens).parse();
+        program = new AddressResolver(program).resolve();
+
+        return new CodeGenerator(program).generateCode();
     }
 }
 

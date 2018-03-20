@@ -35,7 +35,6 @@ static this() {
                     Token(TOK.instruction, opcodeString ~ "s" ~ condString);
             }
         }
-
     }
 
     foreach (r; [EnumMembers!REGISTERS]) {
@@ -101,12 +100,12 @@ enum TOK : int {
 enum commentStart = ';';
 
 struct Loc {
-    string filename;
+    string fileName;
     uint lineNumber = 1; // Instead of default 0
     uint charNumber;
 
     string toString() {
-        return filename ~ ":" ~ to!string(lineNumber) ~ ":" ~ to!string(charNumber);
+        return fileName ~ ":" ~ to!string(lineNumber) ~ ":" ~ to!string(charNumber);
     }
 }
 

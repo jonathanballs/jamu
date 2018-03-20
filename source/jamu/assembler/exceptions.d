@@ -4,6 +4,7 @@ import std.conv;
 import std.format;
 import std.stdio;
 import std.string;
+import std.file : readText;
 import colorize : fg, color, cwrite, cwriteln, cwritefln;
 
 import jamu.assembler.tokens;
@@ -32,8 +33,11 @@ class AssemblerError {
     string message;
     string exceptionType;
 
-    private void printFileLocation(const ref string fileSource, Loc fileLoc,
-            string message = "", fg errorColor = fg.red) {
+    string fileSource() {
+        return readText(location.fileName);
+    }
+
+    private void printFileLocation(Loc fileLoc, string message = "", fg errorColor = fg.red) {
 
         // Get line text and replace tabs with spaces
         string lineText = fileSource.split('\n')[fileLoc.lineNumber - 1];
@@ -55,12 +59,11 @@ class AssemblerError {
         }
     }
 
-    void printError(string fileSource) {
-
+    void printError() {
         cwriteln(("[" ~ exceptionType ~ "] ").color(fg.red), message);
         cwriteln("  --> ".color(fg.blue) ~ this.location.toString());
         cwriteln("    |".color(fg.blue));
-        printFileLocation(fileSource, location, message);
+        printFileLocation(location, message);
     }
 }
 

@@ -22,8 +22,8 @@ class Lexer {
     // Errors
     LexError[] errors;
 
-    this(string filename, string input) {
-        this.location.filename = filename;
+    this(string fileName, string input) {
+        this.location.fileName = fileName;
         this.input = input;
     }
 
@@ -130,7 +130,14 @@ class Lexer {
             r ~= next();
         } while(isAlphaNum(peek()) || peek() == '_');
 
-        return Token(TOK.directive, r, this.tokenStartLocation);
+        if (r[1..$] in keywordTokens
+                && keywordTokens[r[1..$]].type == TOK.directive) {
+            return Token(TOK.directive, r, this.tokenStartLocation);
+        } else {
+            errors ~= new LexError(tokenStartLocation, cast(uint)r.length,
+                    "Error: Not a valid directive");
+            return Token();
+        }
     }
 
     Token lexString() {

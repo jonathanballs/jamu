@@ -4,50 +4,137 @@ import std.stdio;
 import std.string;
 import std.json;
 import std.algorithm.mutation: reverse;
+import std.algorithm: canFind;
+import core.stdc.stdlib;
 
 import jamu.emulator.machine;
 import jamu.emulator.instruction;
 import jamu.assembler;
+import jamu.assembler.exceptions;
 
 import jamu.common.elf;
 
-struct EmulatorConfig {
+struct EmulatorConfig
+{
     bool jsonInterface;
     string fileName;
 }
 
-struct EmulatorCommand {
+struct EmulatorCommand
+{
     string cmd;
     string[] args;
 }
 
 void main(string[] args)
 {
-    EmulatorConfig emuConf;
-    MachineConfig machineConf;
+    // Command line argument parsing. First check whether jamu is launched in
+    // assembler mode or emulator mode.
+    bool assembleMode = false;
+    if (args.canFind("-a") || args.canFind("--assemble"))
+            assembleMode = true;
 
-    if (args.length == 1) {
-        import jamu.tests;
-        auto testRunner = new JamuTestRunner;
-        testRunner.run();
-        return;
+    if (assembleMode) { // Assembler mode
+        string outputFilename = "a.out";
+        string inputFilename;
+        AssemblerOptions options;
+
+        try {
+            getopt(args,
+                    "output|o", &outputFilename,
+                    "tokens|t", &options.printTokens,
+                    "ast|a", &options.printSyntaxTree,
+                    "symbols|s", &options.printSymbolTable
+                    );
+
+            if (args.length != 2) {
+                throw new Exception("Please specify a single filename in "
+                        ~ "your command line arguments");
+            }
+            else
+            {
+                inputFilename = args[1];
+            }
+
+        } catch (Exception e) {
+            writeError(e.message.dup, false);
+            writeln();
+            printHelpAndExit();
+        }
+
+        try
+        {
+            auto elf = Assembler.assembleFile(inputFilename);
+            elf.writeFile(outputFilename);
+        }
+        catch(LexException e) {
+            writeln();
+            foreach(lexError; e.errors) {
+                lexError.printError();
+                writeln();
+            }
+            exit(1);
+        }
+        catch(ParseException e) {
+            writeln();
+            foreach(parseError; e.errors) {
+                parseError.printError();
+                writeln();
+            }
+            exit(2);
+        }
+        catch(TypeException e) {
+            writeln();
+            foreach(typeError; e.errors) {
+                typeError.printError();
+                writeln();
+            }
+            exit(3);
+        }
+        catch (Exception e)
+        {
+            writeError("An internal error occurred. This should never happen");
+            exit(2);
+        }
     }
+    else
+    { // Emulator mode
+        EmulatorConfig emuConf;
+        MachineConfig machineConf;
 
-    auto helpInfo = getopt(
-            args,
-            "json", &emuConf.jsonInterface,
-            "file", &emuConf.fileName);
+        try
+        {
+            getopt(args,
+                    "json", &emuConf.jsonInterface);
+            if (args.length != 2)
+            {
+                throw new Exception("Please specify a single filename in "
+                        ~ "your command line arguments");
+            }
+            else
+            {
+                emuConf.fileName = args[1];
+            }
 
-    Machine machine = new Machine(machineConf);
-    if (emuConf.fileName)
-        machine.loadElf(Elf.readFile(emuConf.fileName));
+        }
+        catch (Exception e)
+        {
+            writeError(e.message.dup, false);
+            writeln();
+            printHelpAndExit();
+        }
+        Machine machine = new Machine(machineConf);
+        if (emuConf.fileName)
+            machine.loadElf(Elf.readFile(emuConf.fileName));
 
-    // Set output to line buffering for json output
-    if (emuConf.jsonInterface) {
-        stdout.setvbuf(0, 2);
+        // Set output to line buffering for json output
+        if (emuConf.jsonInterface)
+        {
+            stdout.setvbuf(0, 2);
+        }
+
+        runLoop(machine, emuConf);
     }
-
-    runLoop(machine, emuConf);
 }
 
 // Parse a command agnostically to input syntax.
@@ -81,7 +168,7 @@ EmulatorCommand parseCommand(string command, bool json) {
     return parsedCommand;
 }
 
-void writeError(string errorMessage, bool json) {
+void writeError(string errorMessage, bool json = false) {
     if (json) {
         JSONValue j = ["error": errorMessage];
         writeln(j);
@@ -293,5 +380,10 @@ void printMachineStatus(Machine* machine, EmulatorConfig emuConf) {
         writeln("0x", format!("%04x\t")(insnLocation), insn);
         writeln("Current machine hash: ", machine.toHash());
     }
+}
+
+void printHelpAndExit() {
+    writeln("help info goes here...");
+    exit(1);
 }
 
