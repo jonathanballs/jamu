@@ -39,7 +39,8 @@ void main(string[] args)
         string inputFilename;
         AssemblerOptions options;
 
-        try {
+        try
+        {
             getopt(args,
                     "output|o", &outputFilename,
                     "tokens|t", &options.printTokens,
@@ -56,11 +57,14 @@ void main(string[] args)
                 inputFilename = args[1];
             }
 
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             writeError(e.message.dup, false);
             writeln();
             printHelpAndExit();
         }
+
 
         try
         {
@@ -73,7 +77,7 @@ void main(string[] args)
                 lexError.printError();
                 writeln();
             }
-            exit(1);
+            exit(2);
         }
         catch(ParseException e) {
             writeln();
@@ -89,10 +93,9 @@ void main(string[] args)
                 typeError.printError();
                 writeln();
             }
-            exit(3);
+            exit(2);
         }
-        catch (Exception e)
-        {
+        catch (Exception e) {
             writeError("An internal error occurred. This should never happen");
             exit(2);
         }
