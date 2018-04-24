@@ -4,9 +4,10 @@ module jamu.emulator.history;
 import jamu.emulator.machine;
 
 enum ACTIONTYPES {
-    registerMod,
-    memoryMod,
     CPSRMod,
+    memoryMod,
+    outputMod,
+    registerMod,
 }
 
 // Represents the changes of a single instruction
@@ -39,6 +40,14 @@ struct Action {
         resourceID = _resourceID;
         originalValue = _originalValue;
         newValue = _newValue;
+    }
+
+    this(ACTIONTYPES _type, uint _resourceID,
+            string _originalValue, string _newValue) {
+        type = _type;
+        resourceID = _resourceID;
+        originalValue = cast(ubyte[]) _originalValue;
+        newValue = cast(ubyte[]) _newValue;
     }
 }
 

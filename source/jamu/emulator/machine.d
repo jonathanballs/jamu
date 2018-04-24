@@ -19,9 +19,16 @@ class Machine {
     private ubyte[] memory;
     private Cpsr cpsr;
     MachineConfig config;
+    private string output;
 
     Step[] history;
     Action[] currentStep;
+
+    string getOutput() { return output; }
+    void appendOutput(string src) {
+        currentStep ~= Action(ACTIONTYPES.outputMod, 0, output.idup, output.idup ~ src);
+        output ~= src;
+    }
 
     void setMemory(uint start, const ubyte[] data) {
 
@@ -84,6 +91,9 @@ class Machine {
                 case ACTIONTYPES.CPSRMod:
                     cpsr = *cast(Cpsr*)action.originalValue.ptr;
                     continue;
+                case ACTIONTYPES.outputMod:
+                    output = cast(string) action.originalValue;
+                    continue;
                 case ACTIONTYPES.memoryMod:
                     writeln(action);
                     foreach(i, b; action.originalValue) {
@@ -135,6 +145,7 @@ class Machine {
         foreach(s; elf.segments()) {
             this.setMemory(s.header.p_vaddr, s.data);
         }
+        this.currentStep = [];
     }
 }
 

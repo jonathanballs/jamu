@@ -12,6 +12,7 @@ public import jamu.emulator.instruction.singleDataTransferInstruction;
 public import jamu.emulator.instruction.branchInstruction;
 public import jamu.emulator.instruction.dataProcessingInstruction;
 public import jamu.emulator.instruction.blockTransferInstruction;
+public import jamu.emulator.instruction.softwareInterruptInstruction;
 
 // Base class for a decompiled instruction that can be
 // excecuted
@@ -108,11 +109,14 @@ class Instruction {
             return new SingleTransferInstruction(location, faBytes);
         } else if (((uintBytes & 0x0E000000) >> 25) == 4) {
             return new BlockTransferInstruction(location, faBytes);
+        } else if (((uintBytes & 0x0F000000) >> 24) == 0xF) {
+            return new SoftwareInterruptInstruction(location, faBytes);
         } else {
             return new UnimplementedInstruction(location, faBytes, "BADINS");
         }
     }
 
+    // Parse several instructions
     static Instruction[] parseSegment(ubyte[] bytes) {
         assert(bytes.length % 4 == 0);
         Instruction[] instructions;
