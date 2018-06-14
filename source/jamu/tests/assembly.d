@@ -1,72 +1,43 @@
 module jamu.tests.assembly;
+// Tests assembly from the test suite
 
+import std.file;
 import std.format;
 import std.stdio;
 import std.string;
+import std.digest;
+import std.json;
+
 import jamu.tests;
 import jamu.assembler;
 import jamu.emulator.instruction;
 
 enum subTestsPerInstruction = 1024;
 enum insWidth = 4;
+enum testSuiteFilename = "./test/test_suite.json";
 
 class ASMTest : JamuTest {
+
+    Assembler assembler;
+    JSONValue testSuite;
+
     this() {
-        this.testTarget = "disassembly";
+        this.testTarget = "assembly";
     }
 
-    void assertDisasm(string source) {
-        ubyte[] b = Assembler.assembleString(source);
-        auto disasm = Instruction.disasm(b);
+    override void test() {
+        testSuite = parseJSON(readText(testSuiteFilename));
 
-        if (disasm != b) {
-            auto sourceSplit = source.split('\n');
-            auto disasmSplit = disasm.split('\n');
-
-            foreach(i, line; sourceSplit) {
-                if (disasmSplit[i] != line) {
-                    assertEqual(line, disasmSplit[i]);
-                    return;
-                }
+        foreach(testGroup; testSuite.array) {
+            foreach(testCase; testGroup["test_cases"].object.byKey) {
+                testAssembly(testCase, testGroup["test_cases"][testCase].str);
             }
         }
     }
 
-    override void test() {
-        testBranchInstruction();
-        testLabels();
-    }
-
-    void testBranchInstruction() {
-        subTestTarget = "branchInstruction";
-        string source;
-        foreach(i; 0..subTestsPerInstruction) {
-            source ~= format!"B 0x%x\n"(i*insWidth);
-        }
-        assertDisasm(source);
-
-        source = "";
-        foreach(i; 0..subTestsPerInstruction) {
-            source ~= format!"BL 0x%x\n"(i*insWidth);
-        }
-        assertDisasm(source);
-
-    }
-
-    void testLabels() {
-        subTestTarget = "labels";
-        string source = "testLabel:\n";
-        string sourceNonLabel = "";
-        foreach(i; 0..subTestsPerInstruction) {
-            source ~= "B testLabel\n";
-            sourceNonLabel ~= "B 0x0\n";
-        }
-
-        ubyte[] labelAsm = Assembler.assembleString(source);
-        ubyte[] nlabelAsm = Assembler.assembleString(sourceNonLabel);
-
-        assertEqual(labelAsm, nlabelAsm);
-        assertDisasm(sourceNonLabel);
+    void testAssembly(string assembly, string hex) {
+        auto h = toHexString!(LetterCase.lower)(assembler.assembleString(assembly));
+        assertEqual(h, hex.toLower());
     }
 }
 

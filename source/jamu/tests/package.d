@@ -4,13 +4,21 @@ import std.stdio;
 import std.conv;
 import colorize : fg, color, cwrite, cwriteln, cwritefln;
 
+import jamu.tests.disassembly;
 import jamu.tests.assembly;
+
+// This causes the tests to be run for `dub test'
+unittest {
+    auto j = new JamuTestRunner();
+    j.run();
+}
 
 class JamuTestRunner {
     void run() {
         // List of all tests to run
         JamuTest[] tests = [
             new TestTests(),
+            new DisasmTest(),
             new ASMTest()
         ];
 
