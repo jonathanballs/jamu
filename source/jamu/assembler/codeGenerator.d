@@ -290,15 +290,24 @@ class CodeGenerator {
             }
 
             loadInsn.preBit = true;
-            loadInsn.immediate = 1;
 
             auto expr = insn.arguments[1].get!Expression;
 
             auto baseReg = expr.arguments[0].get!Register.register;
             loadInsn.baseReg = to!uint(baseReg);
 
-            auto offsetReg = expr.arguments[1].get!Register.register;
-            loadInsn.offset = to!uint(offsetReg);
+            auto offsetter = expr.arguments[1];
+            if (offsetter.type == typeid(Register)) {
+                loadInsn.immediate = 1;
+                auto offsetReg = expr.arguments[1].get!Register.register;
+                loadInsn.offset = to!uint(offsetReg);
+            } else {
+                loadInsn.immediate = 0;
+                int offsetAmount = expr.arguments[1].get!Integer.value;
+                loadInsn.offset = abs(offsetAmount);
+                loadInsn.upBit = offsetAmount >= 0;
+            }
+
             loadInsn.upBit = true;
             loadInsn.writeBackBit = expr.writeBack;
         } else {
