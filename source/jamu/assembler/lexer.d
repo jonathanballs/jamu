@@ -58,10 +58,15 @@ class Lexer {
     }
 
     // Supports 0x, 0b, and normal numbers
-    Token lexNumber() {
+    // Todo negative numbers
+    Token lexInteger() {
         auto base = 10;
 
         string r;
+
+        // Used to indicate a literal
+        if (peek() == '#')
+            next();
 
         if (peek() == '0') {
             switch(peek(2)) {
@@ -220,13 +225,13 @@ class Lexer {
                     while(peek() != '\n' && peek() != '\0') { next(); }
                     break;
                 case '0': ..  case '9':
-                    tokens ~= lexNumber();
+                    tokens ~= lexInteger();
                     break;
                 case '#':
-                    next();
-                    if ('0' <= peek() && peek() <= '9') {
-                        tokens ~= lexNumber();
+                    if ('0' <= peek(2) && peek(2) <= '9') {
+                        tokens ~= lexInteger();
                     } else {
+                        next();
                         writeln("Error unexpected char after #: " ~ next());
                     }
                     break;

@@ -99,6 +99,8 @@ enum TOK : int {
     string_,
     openBracket,
     closeBracket,
+    openBrace,
+    closeBrace,
     exclamationMark,
 }
 

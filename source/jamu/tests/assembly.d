@@ -10,6 +10,8 @@ import std.json;
 
 import jamu.tests;
 import jamu.assembler;
+import jamu.assembler.lexer;
+import jamu.assembler.parser;
 import jamu.emulator.instruction;
 
 enum subTestsPerInstruction = 1024;
@@ -34,6 +36,9 @@ class ASMTest : JamuTest {
                 testAssembly(testCase, testGroup["test_cases"][testCase].str);
             }
         }
+
+        // Test internals
+        testIntegerParsing();
     }
 
     void testAssembly(string assembly, string hex) {
@@ -49,5 +54,39 @@ class ASMTest : JamuTest {
 
         assertEqual(h, hex.toLower(), errMessage);
     }
+
+
+    //
+    // Test assembler internals
+    //
+    void testIntegerParsing() {
+        auto testNums = [
+            "1"     : 1, // Standard decimal
+            "79"    : 79,
+            "2001"  : 2001,
+            "#1"    : 1,
+            "#79"   : 79,
+            "#2001" : 2001,
+
+            "0x1"   : 0x1, // Hexidecimal
+            "0x79"  : 0x79,
+            "0x2001": 0x2001,
+            "#0x1"  : 0x1,
+            "#0x79" : 0x79,
+            "#0x2a01":0x2a01,
+
+            "0b1"   : 0b1, // Binary
+            "0b1001": 0b1001,
+            "#0b1"  : 0b1,
+            "#0b1001":0b1001,
+        ];
+
+        foreach(testNum; testNums.byKey) {
+            auto t = new Lexer("", testNum).lexInteger();
+            auto p = new Parser([t]);
+            assertEqual(testNums[testNum], p.parseInteger().value);
+        }
+    }
+
 }
 
