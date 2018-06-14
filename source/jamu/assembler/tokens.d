@@ -86,9 +86,11 @@ enum DIRECTIVES {
 }
 
 enum TOK : int {
+    charLiteral,
     comma,
     directive,
     eof,
+    exclamationMark,
     expr,
     instruction,
     integer,
@@ -97,11 +99,11 @@ enum TOK : int {
     newline,
     register,
     string_,
+
     openBracket,
     closeBracket,
     openBrace,
     closeBrace,
-    exclamationMark,
 }
 
 enum commentStart = ';';

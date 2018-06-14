@@ -46,20 +46,37 @@ class Parser {
         this.tokens = tokens;
     }
 
-    Integer parseInteger() {
-        assert(peek().type == TOK.integer);
-        auto t = next();
-        auto v = t.value;
-        int base = 10;
-        if (v.length >= 2 && v[1].toLower() == 'b') {
-            v = v[2..$];
-            base = 2;
-        } else if (v.length >= 2 && v[1].toLower() == 'x') {
-            base = 16;
-            v = v[2..$];
+    Integer parseLiteral() {
+        if (peek().type == TOK.integer) {
+            auto t = next();
+            auto v = t.value;
+            int base = 10;
+            if (v.length >= 2 && v[1].toLower() == 'b') {
+                v = v[2..$];
+                base = 2;
+            } else if (v.length >= 2 && v[1].toLower() == 'x') {
+                base = 16;
+                v = v[2..$];
+            }
+
+            return Integer(to!int(v, base), NodeMeta([t]));
+        } else if (peek.type == TOK.charLiteral) {
+            auto t = next();
+            if (t.value[1] == '\\') {
+                switch(t.value[2]) {
+                    case 'n': return Integer(cast(uint)'\n', NodeMeta([t]));
+                    case 't': return Integer(cast(uint)'\t', NodeMeta([t]));
+                    case '\'': return Integer(cast(uint)'\'', NodeMeta([t]));
+                    case '\"': return Integer(cast(uint)'\"', NodeMeta([t]));
+                    default: assert(0); // Should never happen
+                }
+            } else {
+                auto value = cast(uint)t.value[1];
+                return Integer(value, NodeMeta([t]));
+            }
         }
 
-        return Integer(to!int(v, base), NodeMeta([t]));
+        assert(0);
     }
 
     String parseString() {
@@ -77,6 +94,9 @@ class Parser {
                         break;
                     case 't':
                         s ~= '\t';
+                        break;
+                    case '\'':
+                        s ~= '\'';
                         break;
                     case '"':
                         s ~= '\"';
@@ -159,8 +179,8 @@ class Parser {
                 case TOK.openBracket:
                     if (peek().type == TOK.string_) {
                         arguments ~= cast(Variant)parseString();
-                    } else if (peek().type == TOK.integer) {
-                        arguments ~= cast(Variant)parseInteger();
+                    } else if (peek().type == TOK.integer || peek().type == TOK.charLiteral) {
+                        arguments ~= cast(Variant)parseLiteral();
                     } else if (peek().type == TOK.register) {
                         arguments ~= cast(Variant)parseRegister();
                     } else if (peek().type == TOK.labelExpr) {

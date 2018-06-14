@@ -57,16 +57,47 @@ class Lexer {
         while (peek() != '\n' && peek() != '\0') { next(); }
     }
 
-    // Supports 0x, 0b, and normal numbers
+    // Supports 0x, 0b and base 10
+    // Supports character literals
     // Todo negative numbers
     Token lexInteger() {
         auto base = 10;
-
         string r;
 
         // Used to indicate a literal
         if (peek() == '#')
             next();
+
+        if (peek() == '\'') { // A character literal
+
+            if (peek(2) == '\\' && peek(4) == '\'') { // Escape sequence
+                switch(peek(3)) {
+                case 'n':
+                case 't':
+                case '"':
+                case '\'':
+                    r ~= next(); r ~= next();
+                    r ~= next(); r ~= next();
+                    return Token(TOK.charLiteral, r, this.tokenStartLocation);
+                default:
+                    errors ~= new LexError(tokenStartLocation, 4,
+                            "Invalid escape sequence");
+                    skipToEndOfLine();
+                    return Token();
+                }
+            } else if (isPrintable(peek(2)) && peek(3) == '\'') { // Normal ASCII
+                r ~= next(); r ~= next();
+                r ~= next(); r ~= next();
+                return Token(TOK.charLiteral, r, this.tokenStartLocation);
+            } else {
+                errors ~= new LexError(tokenStartLocation, 3,
+                        "Character literals must be as single character of ascii only");
+                skipToEndOfLine();
+                return Token();
+            }
+
+            assert(0);
+        }
 
         if (peek() == '0') {
             switch(peek(2)) {
@@ -228,7 +259,7 @@ class Lexer {
                     tokens ~= lexInteger();
                     break;
                 case '#':
-                    if ('0' <= peek(2) && peek(2) <= '9') {
+                    if (('0' <= peek(2) && peek(2) <= '9') || peek(2) == '\'') {
                         tokens ~= lexInteger();
                     } else {
                         next();

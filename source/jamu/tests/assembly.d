@@ -10,6 +10,7 @@ import std.json;
 
 import jamu.tests;
 import jamu.assembler;
+import jamu.assembler.exceptions;
 import jamu.assembler.lexer;
 import jamu.assembler.parser;
 import jamu.emulator.instruction;
@@ -79,12 +80,30 @@ class ASMTest : JamuTest {
             "0b1001": 0b1001,
             "#0b1"  : 0b1,
             "#0b1001":0b1001,
+
+            "#'a'"  : 'a',
+            "#'}'"  : '}',
+            "#' '"  : ' ',
+            "#'@'"  : '@',
+            "#'a'"  : 'a',
+            "#'\\n'": '\n', // #'\n'
+            "#'\\t'": '\t', // #'\t'
+            "#'\\\"'":'\"', // #'\"'
+            "#'\\\'": '\'', // #'\''
         ];
 
         foreach(testNum; testNums.byKey) {
-            auto t = new Lexer("", testNum).lexInteger();
-            auto p = new Parser([t]);
-            assertEqual(testNums[testNum], p.parseInteger().value);
+            auto l = new Lexer("", testNum);
+            auto p = new Parser([l.lexInteger()]);
+
+            if (l.errors)
+                throw(new LexException(l.errors));
+            if (p.errors)
+                throw(new ParseException(p.errors));
+
+            auto value = p.parseLiteral().value;
+            auto errMessage = format!"%s -> %d. should be %d"(testNum, value, testNums[testNum]);
+            assertEqual(testNums[testNum], value, errMessage);
         }
     }
 
