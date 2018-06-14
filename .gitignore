@@ -17,4 +17,5 @@ jamu-test-*
 a.out
 /*.s
 test/tmp/
+test/test_suite.json
 
