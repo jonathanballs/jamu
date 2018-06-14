@@ -153,15 +153,19 @@ for insn in SSTORE_INSN:
     for i in range(NUM_INS_PER_TEST):
         source += "label: {} R{}, label\n".format(insn, i%16)
 
-    #  ldr r0, [r0, r0]
-    #  ldr r0, [r0, r0]!
+    # ldr r0, [r0]
     for i in range(NUM_INS_PER_TEST):
-        source += "{} R{}, [R{}, R{}]\n".format(insn, i%16, (i+8)%16, int(i/16))
-    for i in range(NUM_INS_PER_TEST):
-        source += "{} R{}, [R{}, R{}]!\n".format(insn, i%16, (i+8)%16, int(i/16))
+        source += "{} R{}, [R{}]\n".format(insn, i%16, i//16)
 
-    #  ldr r0, [r0, #0]
-    #  ldr r0, [r0, #0]!
+    # ldr r0, [r0, r0]
+    # ldr r0, [r0, r0]!
+    for i in range(NUM_INS_PER_TEST):
+        source += "{} R{}, [R{}, R{}]\n".format(insn, i%16, (i+8)%16, i//16)
+    for i in range(NUM_INS_PER_TEST):
+        source += "{} R{}, [R{}, R{}]!\n".format(insn, i%16, (i+8)%16, i//16)
+
+    # ldr r0, [r0, #0]
+    # ldr r0, [r0, #0]!
     for i in range(NUM_INS_PER_TEST):
         source += "{} R{}, [R{}, #{}]\n".format(insn, i%16, (i+8)%16, int(i/16))
     for i in range(NUM_INS_PER_TEST):

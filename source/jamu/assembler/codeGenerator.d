@@ -280,6 +280,7 @@ class CodeGenerator {
             loadInsn.offset = abs(offset);
             loadInsn.upBit = offset >= 0;
         } else if (insn.arguments.length == 2 && insn.arguments[1].type == typeid(Expression)) {
+            // LDR r0, [r0]
             // LDR r0, [r0, r1]
             // LDR r0, [r0, r1]!
             // LDR r0, [r0, #12]!
@@ -292,20 +293,26 @@ class CodeGenerator {
             loadInsn.preBit = true;
 
             auto expr = insn.arguments[1].get!Expression;
-
             auto baseReg = expr.arguments[0].get!Register.register;
             loadInsn.baseReg = to!uint(baseReg);
 
-            auto offsetter = expr.arguments[1];
-            if (offsetter.type == typeid(Register)) {
-                loadInsn.immediate = 1;
-                auto offsetReg = expr.arguments[1].get!Register.register;
-                loadInsn.offset = to!uint(offsetReg);
-            } else {
+            if (expr.arguments.length == 1) {
+                // zero offset
                 loadInsn.immediate = 0;
-                int offsetAmount = expr.arguments[1].get!Integer.value;
-                loadInsn.offset = abs(offsetAmount);
-                loadInsn.upBit = offsetAmount >= 0;
+                loadInsn.offset = 0;
+                loadInsn.upBit = true;
+            } else {
+                auto offsetter = expr.arguments[1];
+                if (offsetter.type == typeid(Register)) {
+                    loadInsn.immediate = 1;
+                    auto offsetReg = expr.arguments[1].get!Register.register;
+                    loadInsn.offset = to!uint(offsetReg);
+                } else {
+                    loadInsn.immediate = 0;
+                    int offsetAmount = expr.arguments[1].get!Integer.value;
+                    loadInsn.offset = abs(offsetAmount);
+                    loadInsn.upBit = offsetAmount >= 0;
+                }
             }
 
             loadInsn.upBit = true;
