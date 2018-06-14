@@ -28,6 +28,7 @@ class ASMTest : JamuTest {
     override void test() {
         testSuite = parseJSON(readText(testSuiteFilename));
 
+        // run the test suite
         foreach(testGroup; testSuite.array) {
             foreach(testCase; testGroup["test_cases"].object.byKey) {
                 testAssembly(testCase, testGroup["test_cases"][testCase].str);
@@ -36,8 +37,17 @@ class ASMTest : JamuTest {
     }
 
     void testAssembly(string assembly, string hex) {
-        auto h = toHexString!(LetterCase.lower)(assembler.assembleString(assembly));
-        assertEqual(h, hex.toLower());
+        string h;
+        try {
+            h = toHexString!(LetterCase.lower)(assembler.assembleString(assembly));
+        } catch (Exception e) {
+            writeln("\nFailed to compile: ", assembly);
+            throw e;
+        }
+
+        auto errMessage = assembly ~ "\t-> " ~ h ~ ". Should be " ~ hex;
+
+        assertEqual(h, hex.toLower(), errMessage);
     }
 }
 

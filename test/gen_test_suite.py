@@ -35,7 +35,8 @@ def test_code(test_name, source):
         try:
             k_bytes = bytes(ks.asm(str.encode(line), addr=0)[0]).hex()
         except KsError as e:
-            print(" \033[91m✗\033[0m Keystone failed to compile ({})".format(
+            print(" \033[91m✗\033[0m Keystone failed to compile '{}' ({})".format(
+                line,
                 e.message
                 ))
             return
@@ -145,15 +146,22 @@ test_code("Testing swi instruction", source)
 #
 #
 SSTORE_INSN = ['ldr', 'str']
-# for insn in SSTORE_INSN:
-    # source = ''
-    # for i in range(NUM_INS_PER_TEST):
-        # source += "{} R{}, label\n".format(insn, i%16)
-    # for i in range(NUM_INS_PER_TEST):
-        # source += "{} R{}, label\n".format(insn, i%16)
+for insn in SSTORE_INSN:
+    source = ''
+    for i in range(NUM_INS_PER_TEST):
+        source += "label: {} R{}, label\n".format(insn, i%16)
+    for i in range(NUM_INS_PER_TEST):
+        source += "label: {} R{}, label\n".format(insn, i%16)
+    for i in range(NUM_INS_PER_TEST):
+        source += "label: {} R{}, label\n".format(insn, i%16)
 
-    # source += 'label:;'
-    # test_code("Testing {} instruction".format(insn), source)
+    for i in range(NUM_INS_PER_TEST):
+        source += "{} R{}, [R{}, R{}]\n".format(insn, i%16, (i+8)%16, int(i/16))
+    for i in range(NUM_INS_PER_TEST):
+        source += "{} R{}, [R{}, R{}]!\n".format(insn, i%16, (i+8)%16, int(i/16))
+
+    source += 'label:;'
+    test_code("Testing {} instruction".format(insn), source)
 
 json_text = json.dumps(output_json_obj, indent = 4)
 with open('test_suite.json', 'w+') as f:

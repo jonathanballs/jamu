@@ -52,7 +52,7 @@ struct LoadStoreBlockInsn {
 
 struct BranchExchangeInsn {
     mixin(bitfields!(
-        uint,  "operandReg", 4,
+        uint, "operandReg", 4,
         uint, "opcode",     24,
         uint, "cond",       4));
 }

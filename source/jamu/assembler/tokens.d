@@ -9,6 +9,7 @@ import std.string;
 import std.typecons;
 
 Token[string] keywordTokens;
+string[] directiveStrings;
 
 static this() {
     // Generate string lists for the opcodes
@@ -41,13 +42,14 @@ static this() {
         auto registerString = to!string(r);
         keywordTokens[registerString] = Token(TOK.register, registerString);
     }
+
     foreach (d; [EnumMembers!DIRECTIVES]) {
         auto directiveString = to!string(d);
         if (d == DIRECTIVES.align_) {
             directiveString = "align";
         }
 
-        keywordTokens[directiveString] = Token(TOK.directive, directiveString);
+        directiveStrings ~= directiveString;
     }
 }
 

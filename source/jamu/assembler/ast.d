@@ -123,3 +123,16 @@ struct Address {
     }
 }
 
+struct Expression {
+    Variant[] arguments;
+    NodeMeta meta;
+
+    bool writeBack;
+    string toString() {
+        auto s = "<EXPRESSION ";
+        if (writeBack)
+            s ~= "(with writeback)";
+        return s ~ ">";
+    }
+}
+

@@ -26,56 +26,62 @@ class CodeGenerator {
         program = program_;
     }
 
-    private bool ensureArgumentTypes(Directive dir, TypeInfo[] types) {
-        if (dir.arguments.length != types.length) {
-            errors ~= new TypeError(getToken(dir), to!string(dir.directive)
-                    ~ " requires " ~ to!string(dir.arguments.length) ~ " arguments");
+    private bool ensureArgumentTypes(T)(T expr, TypeInfo[] types) {
+        if (expr.arguments.length != types.length) {
+            errors ~= new TypeError(getToken(expr), to!string(expr.meta.tokens[0].type)
+                    ~ " requires " ~ to!string(expr.arguments.length) ~ " arguments");
             return false;
         }
-        foreach(i, arg; dir.arguments) {
-            if (arg.type == typeid(Address) && types[i] == typeid(Integer)) {
-                dir.arguments[i] = Integer(arg.get!Address.value, arg.get!Address.meta);
-                arg = dir.arguments[i];
-            } else if (arg.type == typeid(Integer) && types[i] == typeid(Address)) {
-                dir.arguments[i] = Address(arg.get!Integer.value, arg.get!Integer.meta);
-                arg = dir.arguments[i];
-            }
-            if (arg.type != types[i]) {
-                errors ~= new TypeError(getToken(dir), "Expected " ~ to!string(types[i])
-                        ~ " but got " ~ to!string(arg.type));
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private bool ensureArgumentTypes(Instruction insn, TypeInfo[] types) {
-        if (insn.arguments.length != types.length) {
-            errors ~= new TypeError(getToken(insn), to!string(insn.opcode)
-                    ~ " requires " ~ to!string(types.length) ~ " arguments");
-            return false;
-        }
-        foreach(i, arg; insn.arguments) {
+        foreach(i, arg; expr.arguments) {
             // Convert between address and integers
             if (arg.type == typeid(Address) && types[i] == typeid(Integer)) {
-                insn.arguments[i] = Integer(arg.get!Address.value, arg.get!Address.meta);
-                arg = insn.arguments[i];
+                expr.arguments[i] = Integer(arg.get!Address.value, arg.get!Address.meta);
+                arg = expr.arguments[i];
             } else if (arg.type == typeid(Integer) && types[i] == typeid(Address)) {
-                insn.arguments[i] = Address(arg.get!Integer.value, arg.get!Integer.meta);
-                arg = insn.arguments[i];
+                expr.arguments[i] = Address(arg.get!Integer.value, arg.get!Integer.meta);
+                arg = expr.arguments[i];
             }
 
             if (arg.type != types[i]) {
-                errors ~= new TypeError(getToken(insn), "Expected " ~ to!string(types[i])
+                errors ~= new TypeError(getToken(expr), "Expected " ~ to!string(types[i])
                         ~ " but got " ~ to!string(arg.type));
                 return false;
             }
+
+            // Ensure that expression types are correct
+            if (arg.type == typeid(Expression)) {
+                if (!ensureExpressionArgumentTypes(arg.get!Expression))
+                    return false;
+            }
         }
-        types = [];
+
         return true;
     }
 
+    // For ensuring load/store expressions
+    private bool ensureExpressionArgumentTypes(Expression expr) {
+        if (expr.arguments.length == 0) {
+            errors ~= new TypeError(getToken(expr), "Expressions must contain " ~
+                    "at least one argument");
+            return false;
+        } else if (expr.arguments.length == 1) {
+            return ensureArgumentTypes(expr, [typeid(Register)]);
+        } else if (expr.arguments.length == 2) {
+            if (expr.arguments[1].type == typeid(Register)) {
+                return ensureArgumentTypes(expr, [typeid(Register), typeid(Register)]);
+            } else if (expr.arguments[1].type == typeid(Integer)) {
+                return ensureArgumentTypes(expr, [typeid(Register), typeid(Integer)]);
+            } else {
+                errors ~= new TypeError(getToken(expr), "Second argument should either " ~
+                        "be an integer or a register");
+                return false;
+            }
+        } else {
+            errors ~= new TypeError(getToken(expr), "Expressions contain too " ~
+                    "many arguments");
+            return false;
+        }
+    }
 
     ubyte[] generateBranchInstruction(Instruction insn) {
         assert(insn.opcode == OPCODES.b || insn.opcode == OPCODES.bl);
@@ -256,22 +262,56 @@ class CodeGenerator {
     }
 
     ubyte[] generateLoadInstruction(Instruction insn) {
+        LoadStoreInsn* loadInsn = new LoadStoreInsn;
 
-        if (!ensureArgumentTypes(insn,
-                    [typeid(Register), typeid(Address)])) {
-            return [0,0,0,0];
+        if (insn.arguments.length == 2 && insn.arguments[1].type == typeid(Address)) {
+            // LDR r0, label
+            // A simple address
+            if (!ensureArgumentTypes(insn,
+                        [typeid(Register), typeid(Address)])) {
+                return [0,0,0,0];
+            }
+
+            loadInsn.preBit = true;
+            loadInsn.immediate = 0;
+            loadInsn.baseReg = 0b1111; // TODO: This shouldn't just be PC
+
+            int offset = insn.arguments[1].get!Address.value - (insn.address + 8);
+            loadInsn.offset = abs(offset);
+            loadInsn.upBit = offset >= 0;
+        } else if (insn.arguments.length == 2 && insn.arguments[1].type == typeid(Expression)) {
+            // LDR r0, [r0, r1]
+            // LDR r0, [r0, r1]!
+            // LDR r0, [r0, #12]!
+            // A preindexed addressing specification
+            if (!ensureArgumentTypes(insn,
+                        [typeid(Register), typeid(Expression)])) {
+                return [0,0,0,0];
+            }
+
+            loadInsn.preBit = true;
+            loadInsn.immediate = 1;
+
+            auto expr = insn.arguments[1].get!Expression;
+
+            auto baseReg = expr.arguments[0].get!Register.register;
+            loadInsn.baseReg = to!uint(baseReg);
+
+            auto offsetReg = expr.arguments[1].get!Register.register;
+            loadInsn.offset = to!uint(offsetReg);
+            loadInsn.upBit = true;
+            loadInsn.writeBackBit = expr.writeBack;
+        } else {
+            // TODO: A post indexed addressing specification
+            errors ~= new TypeError(getToken(insn), "Expressions contain too " ~
+                    "many arguments");
+            return [0, 0, 0, 0];
         }
 
-        LoadStoreInsn* loadInsn = new LoadStoreInsn;
         loadInsn.cond = cast(uint)insn.extension;
         loadInsn.opcode = 0b01;
         loadInsn.destReg = to!uint(insn.arguments[0].get!Register.register);
 
-        int offset = insn.arguments[1].get!Address.value - (insn.address + 8);
-        loadInsn.upBit = offset >= 0;
-        loadInsn.offset = abs(offset);
-        loadInsn.baseReg = 0b1111; // TODO: This shouldn't just be PC
-        loadInsn.preBit = true;
         loadInsn.loadBit = insn.opcode == OPCODES.ldr;
 
         return cast(ubyte[]) loadInsn[0..1];
@@ -311,6 +351,7 @@ class CodeGenerator {
             case OPCODES.str:
                 return generateLoadInstruction(ins);
             default:
+                // Throw unimplemented
                 return [0, 0, 0, 0];
         }
     }

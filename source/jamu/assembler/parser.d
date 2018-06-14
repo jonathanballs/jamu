@@ -5,6 +5,7 @@ import std.stdio;
 import std.conv;
 import std.uni : toLower;
 import core.stdc.stdlib : exit;
+import std.algorithm: canFind;
 
 import jamu.assembler.exceptions;
 import jamu.assembler.tokens;
@@ -94,6 +95,30 @@ class Parser {
         return String(s, NodeMeta([t]));
     }
 
+    Expression parseExpression() {
+        assert(peek().type == TOK.openBracket);
+
+        Expression expr;
+        expr.meta.tokens ~= next();
+
+        expr.arguments = parseArguments();
+        if (peek().type == TOK.closeBracket) {
+            expr.meta.tokens ~= next();
+            if (peek().type == TOK.exclamationMark) {
+                expr.writeBack = true;
+                next();
+            }
+
+        } else {
+            errors ~= new ParseError(expr.meta.tokens[0],
+                    "Error: expression was not closed");
+            skipToEndOfLine();
+            return expr;
+        }
+
+        return expr;
+    }
+
     Register parseRegister() {
         assert(peek().type == TOK.register);
         auto t = next();
@@ -124,13 +149,14 @@ class Parser {
 
                 // New line only if no arguments
                 case TOK.newline:
-                     next();
                      break wloop;
+
 
                 case TOK.string_:
                 case TOK.integer:
                 case TOK.register:
                 case TOK.labelExpr:
+                case TOK.openBracket:
                     if (peek().type == TOK.string_) {
                         arguments ~= cast(Variant)parseString();
                     } else if (peek().type == TOK.integer) {
@@ -139,15 +165,17 @@ class Parser {
                         arguments ~= cast(Variant)parseRegister();
                     } else if (peek().type == TOK.labelExpr) {
                         arguments ~= cast(Variant)parseLabelExpr();
+                    } else if (peek().type == TOK.openBracket) {
+                        arguments ~= cast(Variant)parseExpression();
                     } else {
-                        assert(0);
+                        errors ~= new ParseError(next(),
+                                "Error: not a valid argument type");
+                        skipToEndOfLine();
+                        break;
                     }
 
-                    // Next should be comma or newline
-                    if (peek().type == TOK.newline || peek().type == TOK.eof) {
-                        next();
-                        break wloop;
-                    } else if (peek().type == TOK.comma) {
+                    // Next should be comma if there are more arguments
+                    if (peek().type == TOK.comma) {
                         next();
                         break;
                     } else if (peek().type == TOK.integer
@@ -160,7 +188,7 @@ class Parser {
                         skipToEndOfLine();
                         break wloop;
                     } else {
-                        assert(0);
+                        break wloop;
                     }
 
                 case TOK.instruction:
@@ -238,8 +266,14 @@ class Parser {
                     nodes ~= v;
                     break;
                 default:
+                    auto errorMsg = "Error: Line must start with an instruction,"
+                                                        ~ " directive or label";
+                    if (directiveStrings.canFind(peek().value).toLower()) {
+                        errorMsg = "Error: Directives must start with a full stop "
+                                ~ "e.g. \"." ~ peek().value ~ "\"";
+                    }
                     errors ~= new ParseError(next(),
-                            "Error: Line must start with an instruction or label");
+                            errorMsg);
                     skipToEndOfLine();
                     continue;
             }

@@ -75,12 +75,14 @@ class Lexer {
                     base = 2;
                     r ~= next(); r ~= next();
                     break;
-                case 0: .. case 9:
+                case '0': .. case '9':
                     errors ~= new LexError(tokenStartLocation, 2,
                             "Decimal numbers may not start with preceding zeros");
                     skipToEndOfLine();
                     return Token();
                 default:
+                    // It's just a zero
+                    break;
             }
         }
 
@@ -130,12 +132,13 @@ class Lexer {
             r ~= next();
         } while(isAlphaNum(peek()) || peek() == '_');
 
-        if (r[1..$] in keywordTokens
-                && keywordTokens[r[1..$]].type == TOK.directive) {
+        auto directiveName = r[1..$].toLower();
+
+        if (directiveStrings.canFind(directiveName)) {
             return Token(TOK.directive, r, this.tokenStartLocation);
         } else {
             errors ~= new LexError(tokenStartLocation, cast(uint)r.length,
-                    "Error: Not a valid directive");
+                    "Error: Invalid directive");
             return Token();
         }
     }
