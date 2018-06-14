@@ -32,7 +32,7 @@ void main(string[] args)
     // assembler mode or emulator mode.
     bool assembleMode = false;
     if (args.canFind("-a") || args.canFind("--assemble"))
-            assembleMode = true;
+        assembleMode = true;
 
     if (assembleMode) { // Assembler mode
         string outputFilename = "a.out";
@@ -95,10 +95,6 @@ void main(string[] args)
             }
             exit(2);
         }
-        catch (Exception e) {
-            writeError("An internal error occurred. This should never happen");
-            exit(2);
-        }
     }
     else
     { // Emulator mode
@@ -107,18 +103,11 @@ void main(string[] args)
 
         try
         {
-            getopt(args,
-                    "json", &emuConf.jsonInterface);
-            if (args.length != 2)
-            {
-                throw new Exception("Please specify a single filename in "
-                        ~ "your command line arguments");
-            }
-            else
+            getopt(args, "json", &emuConf.jsonInterface);
+            if (args.length == 2)
             {
                 emuConf.fileName = args[1];
             }
-
         }
         catch (Exception e)
         {
@@ -126,6 +115,7 @@ void main(string[] args)
             writeln();
             printHelpAndExit();
         }
+
         Machine machine = new Machine(machineConf);
         if (emuConf.fileName)
             machine.loadElf(Elf.readFile(emuConf.fileName));
@@ -184,8 +174,8 @@ void writeError(string errorMessage, bool json = false) {
 
 void runLoop(Machine machine, EmulatorConfig emuConf) {
 
-    if (!emuConf.jsonInterface)
-        printMachineStatus(&machine, emuConf);
+    //if (!emuConf.jsonInterface)
+        //printMachineStatus(&machine, emuConf);
 
     EmulatorCommand previousCommand = EmulatorCommand("step");
 
@@ -225,7 +215,8 @@ void runLoop(Machine machine, EmulatorConfig emuConf) {
                 JSONValue j = [
                     "mem_size": machine.config.memorySize,
                     "pc": machine.pc(),
-                    "machine_hash": machine.toHash()
+                    "machine_hash": machine.toHash(),
+                    "history_size": machine.history.length,
                 ];
                 writeln(j);
 
@@ -271,7 +262,7 @@ void runLoop(Machine machine, EmulatorConfig emuConf) {
                     j["memory"] = mem;
                     writeln(j);
                 } else {
-                    import std.digest.digest;
+                    import std.digest;
                     foreach(i; 0..(mem.length / 4)) {
                         write("0x", format!("%04x")(startLoc + i*4));
                         writeln("  0x", toHexString!(LetterCase.lower)(mem[i*4..(i+1)*4]));
@@ -303,6 +294,11 @@ void runLoop(Machine machine, EmulatorConfig emuConf) {
                 } catch (Exception e) {
                     writeError(to!string(e.message), emuConf.jsonInterface);
                 }
+                continue;
+
+            case "output":
+                JSONValue j = ["output": machine.getOutput()];
+                writeln(j);
                 continue;
 
             case "loadasm":
