@@ -1,0 +1,10 @@
+# Default EditorConfig properties
+[*]
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+max_line_length = 80
+
+dfmt_brace_style = otbs
+
